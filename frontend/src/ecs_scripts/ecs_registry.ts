@@ -1,4 +1,7 @@
-import { NonCollidable, Collision, Motion, Player, RenderRequest, Wall, Ball, Opponent, Text, Button, ScreenState } from "./components"
+import { 
+    NonCollidable, Collision, Motion, Player, RenderRequest, 
+    Wall, Ball, Opponent, Text, Button, ScreenState, EndGameWall, Animation
+} from "./components"
 import { ComponentContainer } from "./ecs"
 
 class ECSRegistry {
@@ -13,6 +16,8 @@ class ECSRegistry {
     public texts: ComponentContainer<Text> = new ComponentContainer(Text)
     public buttons: ComponentContainer<Button> = new ComponentContainer(Button)
     public screenStates: ComponentContainer<ScreenState> = new ComponentContainer(ScreenState)
+    public animations: ComponentContainer<Animation> = new ComponentContainer(Animation)
+    public endGameWalls: ComponentContainer<EndGameWall> = new ComponentContainer(EndGameWall)
 
     private componentsList: ComponentContainer<any>[]
 
@@ -30,6 +35,8 @@ class ECSRegistry {
         this.componentsList.push(this.texts)
         this.componentsList.push(this.buttons)
         this.componentsList.push(this.screenStates)
+        this.componentsList.push(this.animations)
+        this.componentsList.push(this.endGameWalls)
     }
 
     public listAllComponents() {

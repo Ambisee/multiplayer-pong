@@ -35,19 +35,31 @@ class Wall extends Component {}
 
 class Text extends Component {
     public content: string
-    public color: vec4
-    public scale: number // default value of 1 corresponds to the default font size: 64px
+    
+    /** 
+     * Scaling factor applied to the default fontsize.
+     * i.e. the resulting fontsize is `scale * 64px` (64px is the default fontsize)
+     */
+    public scale: number
 
     public constructor(
         content: string             = "",
-        color: vec4                 = vec4.fromValues(1, 1, 1, 1),
         scale: number               = 1
     ) {
         super()
 
         this.content = content
-        this.color = color
         this.scale = scale
+    }
+}
+
+class EndGameWall extends Component {
+    public isLeft: boolean
+
+    public constructor(isLeft: boolean = false) {
+        super()
+
+        this.isLeft = isLeft
     }
 }
 
@@ -91,10 +103,11 @@ class Collision extends Component {
 }
 
 class ScreenState extends Component {
-    // The degree of darkening of the screen. 
-    // Value must be a float between 0 and 1
-    // - 0 -> no darkening
-    // - 1 -> maximum darkening (everything becomes black)
+    /** The degree of darkening of the screen. 
+     * Value must be a float between 0 and 1
+     * - 0 -> no darkening
+     * - 1 -> maximum darkening (everything becomes black)
+    */
     public darkenScreenFactor: number
 
     public constructor(darkenScreenFactor: number = 0) {
@@ -105,7 +118,39 @@ class ScreenState extends Component {
 }
 
 class Animation extends Component {
+    /**
+     * The duration of the animation
+     */
+    public duration: number
+    
+    /**
+     * The total number of frames in the animation
+     */
+    public steps: number
+    
+    /**
+     * The callback functions that corresponds to each step in the animation.
+     * The size must be equal to `steps`
+     */
+    public callbacks: Function[]
+    
+    /**
+     * The current step the animation is on, must be in the range of `[0, steps - 1]`
+     */
+    public currentStep: number
 
+    public constructor(
+        duration: number = 0,
+        steps: number = 0,
+        callbacks: Function[] = [],
+        currentStep: number = 0,
+    ) {
+        super()
+        this.duration = duration
+        this.steps = steps
+        this.callbacks = callbacks
+        this.currentStep = currentStep
+    }
 }
 
 enum GEOMETRY {
@@ -175,6 +220,7 @@ class RenderRequest extends Component {
 
 export {
     Motion, Player, RenderRequest, NonCollidable, Collision, 
-    Wall, Ball, Opponent, Text, Button, ScreenState,
+    Wall, Ball, Opponent, Text, Button, ScreenState, EndGameWall,
+    Animation,
     GEOMETRY, EFFECTS, TEXTURE, RENDER_LAYER, GAME_SCREEN
 }

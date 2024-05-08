@@ -1,17 +1,17 @@
 import { vec2, vec4 } from "gl-matrix"
 import { registry } from "./ecs_registry"
 import { Entity } from "./ecs"
-import { EFFECTS, GEOMETRY, RENDER_LAYER, Text } from "./components"
+import { EFFECTS, EndGameWall, GEOMETRY, RENDER_LAYER, Text } from "./components"
 import RenderSystem from "./render_system"
 
 function createRectangle(position: vec2, scale: vec2, color: vec4): number {
-    let entity = Entity.generate()
+    const entity = Entity.generate()
 
-    let motion = registry.motions.emplace(entity)
+    const motion = registry.motions.emplace(entity)
     motion.position = position
     motion.scale = scale
 
-    let renderRequest = registry.renderRequests.emplace(entity)
+    const renderRequest = registry.renderRequests.emplace(entity)
     renderRequest.color = color
 
     return entity
@@ -45,16 +45,19 @@ function createWall(position: vec2, scale: vec2) {
 
 function createScreenBoundary(renderer: RenderSystem) {
     // Left wall
-    createWall(
+    const leftWall = createWall(
         vec2.fromValues(-0.5, renderer.gl.canvas.height / 2),
         vec2.fromValues(1, renderer.gl.canvas.height)
     )
 
     // Right wall
-    createWall(
+    const rightWall = createWall(
         vec2.fromValues(renderer.gl.canvas.width + 0.5, renderer.gl.canvas.height / 2),
         vec2.fromValues(1, renderer.gl.canvas.height)
     )
+
+    registry.endGameWalls.insert(leftWall, new EndGameWall(true))
+    registry.endGameWalls.insert(rightWall, new EndGameWall(false))
 
     // Top wall
     createWall(
@@ -106,18 +109,18 @@ function createText(renderer: RenderSystem, position: vec2, content: string, col
     }
             
     motion.scale = vec2.fromValues(overallWidth, overallHeight)
-    const text = registry.texts.insert(entity, new Text(content, color, scale))
+    const text = registry.texts.insert(entity, new Text(content, scale))
     const renderRequest = registry.renderRequests.emplace(entity)
 
     renderRequest.effect = EFFECTS.TEXT
     renderRequest.geometry = GEOMETRY.TEXT
     renderRequest.renderLayer = RENDER_LAYER.L2
-    renderRequest.color = vec4.create()
+    renderRequest.color = vec4.clone(color)
 
     return entity
 }
 
 export {
     createRectangle, createEllipse, createWall, createScreenBoundary, createBall,
-    createText
+    createText, 
 }

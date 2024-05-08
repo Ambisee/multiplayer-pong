@@ -31,8 +31,9 @@ function loop(
 ) {
     const timeElapsed = Date.now() - previousTime
 
+    world.step(timeElapsed)
+    
     if (!world.isPaused) {
-        world.step(timeElapsed)
         physics.step(timeElapsed)
         world.handleCollision(timeElapsed)
     }

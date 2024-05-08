@@ -68,9 +68,27 @@ class PauseMenu extends BaseScreen {
                 },
                 onMouseEnter: (e) => {
                     registry.buttons.get(resumeBtnBuilder.entity).isMouseHovering = true
+                    
+                    // Change color to red
+                    const textRR = registry.renderRequests.get(resumeBtnBuilder.buttonComponent.textEntity)
+                    vec4.copy(textRR.color, this.RED)
+
+                    resumeBtnBuilder.buttonComponent.associatedEntities.forEach((value) => {
+                        const assocRR = registry.renderRequests.get(value)
+                        vec4.copy(assocRR.color, this.RED)
+                    })
                 },
                 onMouseExit: (e) => {
                     registry.buttons.get(resumeBtnBuilder.entity).isMouseHovering = false
+
+                    // Change color to white
+                    const textRR = registry.renderRequests.get(resumeBtnBuilder.buttonComponent.textEntity)
+                    vec4.copy(textRR.color, this.WHITE)
+
+                    resumeBtnBuilder.buttonComponent.associatedEntities.forEach((value) => {
+                        const assocRR = registry.renderRequests.get(value)
+                        vec4.copy(assocRR.color, this.WHITE)
+                    })
                 },
             },
             {
@@ -78,13 +96,33 @@ class PauseMenu extends BaseScreen {
                 onMouseDown: (e) => {
                     registry.screenStates.components[0].darkenScreenFactor = 0
                     world.currentScreen = GAME_SCREEN.MAIN_MENU
+                    world.resetScore()
                     world.reinitializeWorld()
+                    this.cleanup()
                 },
                 onMouseEnter: (e) => {
                     registry.buttons.get(quitBtnBuilder.entity).isMouseHovering = true
+
+                    // Change color to red
+                    const textRR = registry.renderRequests.get(quitBtnBuilder.buttonComponent.textEntity)
+                    vec4.copy(textRR.color, this.RED)
+
+                    quitBtnBuilder.buttonComponent.associatedEntities.forEach((value) => {
+                        const assocRR = registry.renderRequests.get(value)
+                        vec4.copy(assocRR.color, this.RED)
+                    })
                 },
                 onMouseExit: (e) => {
                     registry.buttons.get(quitBtnBuilder.entity).isMouseHovering = false
+
+                    // Change color to white
+                    const textRR = registry.renderRequests.get(quitBtnBuilder.buttonComponent.textEntity)
+                    vec4.copy(textRR.color, this.WHITE)
+
+                    quitBtnBuilder.buttonComponent.associatedEntities.forEach((value) => {
+                        const assocRR = registry.renderRequests.get(value)
+                        vec4.copy(assocRR.color, this.WHITE)
+                    })
                 },
             },
         ]

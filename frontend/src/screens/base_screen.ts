@@ -1,3 +1,4 @@
+import { vec4 } from "gl-matrix"
 import { registry } from "../ecs_scripts/ecs_registry"
 import RenderSystem from "../ecs_scripts/render_system"
 import WorldSystem from "../ecs_scripts/world_system"
@@ -13,7 +14,13 @@ class BaseScreen {
     public screenEntities: number[] // A reference to an array that stores the screen entity ids
     public buttonToCallbacksMap: ButtonCallback[] // A reference to an array that stores the 
     public keyToCallback: Map<string, (e: KeyboardEvent) => void> // A reference to a map between keycodes and callbacks
+
     protected world: WorldSystem
+    
+    protected WHITE: vec4 = vec4.fromValues(1, 1, 1, 1)
+    protected BLACK: vec4 = vec4.fromValues(0, 0, 0, 1)
+    protected RED: vec4 = vec4.fromValues(1, 0, 0, 1)
+    protected HOVER_GREY: vec4 = vec4.fromValues(0.5, 0.5, 0.5, 1)
 
     public constructor(
         screenEntities: number[], 
@@ -54,7 +61,7 @@ class BaseScreen {
     }
 
     protected bindKeyboardCallbacks(world: WorldSystem, renderer: RenderSystem) {
-    
+        
     }
     
     protected cleanupButtonEntity(entity: number) {

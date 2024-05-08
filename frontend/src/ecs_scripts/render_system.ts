@@ -1,4 +1,4 @@
-import { mat3, vec2, vec4 } from "gl-matrix"
+import { mat3, vec2 } from "gl-matrix"
 
 import { registry } from "./ecs_registry"
 import { Transform } from "./common"
@@ -154,23 +154,29 @@ class RenderSystem {
             return rr1.renderLayer - rr2.renderLayer
         }, false)
 
+
+        // Find the set of entities to be rendered based on the given `low` and `high`
         let start = -1
         let end = -1
 
         for (let i = 0; i < registry.renderRequests.length(); i++) {
             const component = registry.renderRequests.components[i]
             
+            // Found the index of the first entity to be rendered
             if (component.renderLayer === low && start === -1) {
                 start = i
                 continue
             }
-
+            
+            // Found the index of the first entity NOT to be rendered
             if (component.renderLayer === high && end === -1) {
                 end = i
                 break
             }
         }
+        
 
+        // Validating the start and the end index values
         if (start === -1) 
             start = registry.renderRequests.length()
         if (end === -1)
@@ -189,8 +195,6 @@ class RenderSystem {
 
             switch (renderRequest.geometry) {
                 case GEOMETRY.RECTANGLE:
-                    this.drawShapes(entity, renderRequest, motion)
-                    break
                 case GEOMETRY.CIRCLE:
                     this.drawShapes(entity, renderRequest, motion)
                     break
@@ -240,7 +244,7 @@ class RenderSystem {
         let y = motion.position[1]
 
         // Setup the text color in the shader
-        this.gl.uniform4fv(colorLoc, text.color)
+        this.gl.uniform4fv(colorLoc, renderRequest.color)
 
         // Setup the vertex attribute pointer
         this.gl.vertexAttribPointer(positionLoc, 4, this.gl.FLOAT, false, 0, 0)
@@ -292,12 +296,6 @@ class RenderSystem {
         let vbo: WebGLBuffer
         let ibo: WebGLBuffer
 
-        // Define the transformation matrix
-        let trans = new Transform()
-        trans.translate(motion.position)
-        trans.rotate(motion.rotation)
-        trans.scale(motion.scale)
-
         // Select the programs and buffers
         program = this.effects[renderRequest.effect]
         vbo = this.vertexBuffers[renderRequest.geometry]
@@ -307,6 +305,12 @@ class RenderSystem {
         this.gl.useProgram(program)
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vbo)
         this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, ibo)
+
+        // Define the transformation matrix
+        let trans = new Transform()
+        trans.translate(motion.position)
+        trans.rotate(motion.rotation)
+        trans.scale(motion.scale)
 
         // Configure program accordingly
         if (renderRequest.effect == EFFECTS.TRIANGLE) {

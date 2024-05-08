@@ -5,7 +5,7 @@ import { BaseScreen } from "./base_screen"
 import { registry } from "../ecs_scripts/ecs_registry"
 import { ButtonBuilder } from "../ecs_scripts/ui_init"
 import WorldSystem from "../ecs_scripts/world_system"
-import { GAME_SCREEN } from "../ecs_scripts/components"
+import { Animation, GAME_SCREEN } from "../ecs_scripts/components"
 
 class MainMenu extends BaseScreen {
 
@@ -31,8 +31,8 @@ class MainMenu extends BaseScreen {
         const mPlayBtnBuilder = new ButtonBuilder(renderer)
 
         // Button colors
-        sPlayBtnBuilder.setColor(vec4.fromValues(0.75, 0.75, 0.75, 1), vec4.fromValues(1, 1, 1, 1))
-        mPlayBtnBuilder.setColor(vec4.fromValues(0.75, 0.75, 0.75, 1), vec4.fromValues(0, 0, 0, 1))
+        sPlayBtnBuilder.setColor(vec4.clone(this.WHITE), vec4.clone(this.BLACK))
+        mPlayBtnBuilder.setColor(vec4.clone(this.WHITE), vec4.clone(this.BLACK))
         
         // Button size and positions
         const buttonDimension = vec2.fromValues(100, 25)
@@ -50,21 +50,32 @@ class MainMenu extends BaseScreen {
         sPlayBtnBuilder.motionComponent.position[1] -= 0.75 * sPlayBtnBuilder.motionComponent.scale[1]
 
         // Button variant
-        sPlayBtnBuilder.setBorderedBox(1)
+        sPlayBtnBuilder.setFilledBox()
         mPlayBtnBuilder.setFilledBox()
+
+        const sPlayBtnTextRR = registry.renderRequests.get(sPlayBtnBuilder.buttonComponent.textEntity)
+        const sPlayBtnBoxRR = registry.renderRequests.get(sPlayBtnBuilder.buttonComponent.associatedEntities[0])
+
+        const mPlayBtnTextRR = registry.renderRequests.get(mPlayBtnBuilder.buttonComponent.textEntity)
+        const mPlayBtnBoxRR = registry.renderRequests.get(mPlayBtnBuilder.buttonComponent.associatedEntities[0])
 
         this.buttonToCallbacksMap = [
             {
-                entity: sPlayBtnBuilder.entity, 
+                entity: sPlayBtnBuilder.entity,
                 onMouseDown: (e: MouseEvent) => {
                     world.currentScreen = GAME_SCREEN.GAME_SCREEN
                     world.reinitializeWorld()
+                    world.resetScore()
                 },
                 onMouseEnter: (e) => {
-                    registry.buttons.get(sPlayBtnBuilder.entity).isMouseHovering = true
+                    vec4.copy(sPlayBtnTextRR.color, this.WHITE)
+                    vec4.copy(sPlayBtnBoxRR.color, this.RED)
+                    sPlayBtnBuilder.buttonComponent.isMouseHovering = true
                 },
                 onMouseExit: (e) => {
-                    registry.buttons.get(sPlayBtnBuilder.entity).isMouseHovering = false
+                    vec4.copy(sPlayBtnBoxRR.color, this.WHITE)
+                    vec4.copy(sPlayBtnTextRR.color, this.BLACK)
+                    sPlayBtnBuilder.buttonComponent.isMouseHovering = false
                 }
             },
             {
@@ -72,11 +83,16 @@ class MainMenu extends BaseScreen {
                 onMouseDown: (e: MouseEvent) => {
                     world.currentScreen = GAME_SCREEN.GAME_SCREEN
                     world.reinitializeWorld()
+                    world.resetScore()
                 },
                 onMouseEnter: (e) => {
+                    vec4.copy(mPlayBtnTextRR.color, this.WHITE)
+                    vec4.copy(mPlayBtnBoxRR.color, this.RED)
                     registry.buttons.get(mPlayBtnBuilder.entity).isMouseHovering = true
                 },
                 onMouseExit: (e) => {
+                    vec4.copy(mPlayBtnBoxRR.color, this.WHITE)
+                    vec4.copy(mPlayBtnTextRR.color, this.BLACK)
                     registry.buttons.get(mPlayBtnBuilder.entity).isMouseHovering = false
                 }
             }

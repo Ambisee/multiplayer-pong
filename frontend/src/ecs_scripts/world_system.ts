@@ -4,7 +4,7 @@ import { registry } from "./ecs_registry"
 import { createBall, createEllipse, createRectangle, createScreenBoundary, createText } from "./world_init"
 import { vec2, vec3, vec4 } from "gl-matrix"
 import { clamp } from "./common"
-import { GAME_SCREEN } from "./components"
+import { GAME_SCREEN, GEOMETRY } from "./components"
 import ScreenSystem from "./screen_system"
 import { BaseScreen } from "../screens/base_screen"
 import { Entity } from "./ecs"
@@ -18,7 +18,8 @@ class WorldSystem {
     
     public currentScreen: GAME_SCREEN = GAME_SCREEN.MAIN_MENU
     public isPaused: boolean = false
-    public score: number = 0
+    public playerScore: number = 0
+    public opponentScore: number = 0
 
     public constructor(renderer: RenderSystem) {
         this.renderer = renderer
@@ -37,9 +38,18 @@ class WorldSystem {
     }
 
     public step(elapsedTimeMs: number) {
+        this.screenSystem.step()
         
+        if (this.isPaused) {
+            return
+        }
     }
 
+    public resetScore() {
+        this.opponentScore = 0
+        this.playerScore = 0
+    }
+    
     public reinitializeWorld() {
         let screen: BaseScreen
 
@@ -124,7 +134,7 @@ class WorldSystem {
         // Create the score board
         const textE = createText(
             this.renderer, vec2.fromValues(this.renderer.gl.canvas.width / 2, 0),
-            "1 - 1", vec4.fromValues(0.65, 0.65, 0.65, 1), 1
+            `${this.playerScore} - ${this.opponentScore}`, vec4.fromValues(0.65, 0.65, 0.65, 1), 1
         )
 
         const textM = registry.motions.get(textE)
@@ -136,6 +146,22 @@ class WorldSystem {
         for (const collision of registry.collisions.components) {
             // Ball collides with other objects
             if (collision.entity === this.ball) {
+                
+                // Ball collides with the horizontal screen borders
+                if (registry.endGameWalls.has(collision.entityOther)) {
+                    const endGameWall = registry.endGameWalls.get(collision.entityOther)
+                    
+                    if (endGameWall.isLeft) {
+                        this.opponentScore += 1
+                    } else {
+                        this.playerScore += 1
+                    }
+
+                    this.reinitializeWorld()
+                    break
+                }
+
+                // Ball collides with a wall
                 if (registry.walls.has(collision.entityOther)) {
                     let ballMotion = registry.motions.get(this.ball)
                     let otherMotion = registry.motions.get(collision.entityOther)
