@@ -4,11 +4,13 @@ import ConnectMessage from "../messages/connect_message"
 class MultiplayerSystem {
     private url: string
     private websocket: WebSocket
-    private eventHandlerMap: Map<string, Function[]>
+    private eventHandlerMap: Map<number, Function[]>
 
     public constructor(url: string) {
         this.url = url
-        this.eventHandlerMap = new Map()
+        this.eventHandlerMap = new Map([
+            
+        ])
     }
 
     public init() {
@@ -24,6 +26,7 @@ class MultiplayerSystem {
 
         this.websocket.addEventListener("error", (e) => {
             console.error("Failed to establish a websocket connection.")
+            alert("Failed to establish a websocket connection. Please exit the game and try again")
         })
 
         this.websocket.addEventListener("open", (e) => {

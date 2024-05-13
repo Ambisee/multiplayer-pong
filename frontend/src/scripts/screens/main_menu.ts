@@ -64,9 +64,7 @@ class MainMenu extends BaseScreen {
             {
                 entity: sPlayBtnBuilder.entity,
                 onMouseDown: (e: MouseEvent) => {
-                    world.currentScreen = GAME_SCREEN.GAME_SCREEN
-                    world.reinitializeWorld()
-                    world.resetScore()
+                    world.play(false)
                 },
                 onMouseEnter: (e) => {
                     vec4.copy(sPlayBtnTextRR.color, this.WHITE)
@@ -84,9 +82,7 @@ class MainMenu extends BaseScreen {
             {
                 entity: mPlayBtnBuilder.entity, 
                 onMouseDown: (e: MouseEvent) => {
-                    world.currentScreen = GAME_SCREEN.GAME_SCREEN
-                    world.reinitializeWorld()
-                    world.resetScore()
+                    world.play(true)
                 },
                 onMouseEnter: (e) => {
                     vec4.copy(mPlayBtnTextRR.color, this.WHITE)

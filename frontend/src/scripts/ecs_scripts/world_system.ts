@@ -12,6 +12,7 @@ import { BaseScreen } from "../screens/base_screen"
 import { Entity } from "./ecs"
 import { setTextContent } from "../helper_scripts/component_helpers"
 import { createBall, createDelayedCallback, createRectangle, createScreenBoundary, createText } from "./world_init"
+import CollisionMessage from "../messages/collision_message"
 
 class WorldSystem {
     private renderer: RenderSystem
@@ -21,6 +22,7 @@ class WorldSystem {
     private player: number
     private opponent: number
     private timerTextEntity: number
+    public isMultiplayer = false
     
     public currentScreen: GAME_SCREEN = GAME_SCREEN.MAIN_MENU
     public isPaused: boolean = false
@@ -31,7 +33,6 @@ class WorldSystem {
         this.renderer = renderer
         this.screenSystem = new ScreenSystem()
         this.multiplayerSystem = new MultiplayerSystem("ws://127.0.0.1:8001")
-        this.multiplayerSystem.init()
 
         this.init()
     }
@@ -67,6 +68,13 @@ class WorldSystem {
         this.playerScore = 0
     }
     
+    public play(isMultiplayer: boolean) {
+        this.currentScreen = GAME_SCREEN.GAME_SCREEN
+        this.isMultiplayer = isMultiplayer
+        this.reinitializeWorld()
+        this.resetScore()
+    }
+
     public reinitializeWorld() {
         let screen: BaseScreen
 
@@ -138,10 +146,14 @@ class WorldSystem {
 
         // In singleplayer, this function should be called immediately
         // In multiplayer, this function should be called only after two players are in a room
-        this.commenceGameCountdown()
+        if (!this.isMultiplayer) {
+            this.commenceGameCountdown()
+        } else {
+            this.multiplayerSystem.init()
+        }
     }
 
-    public commenceGameCountdown() {
+    private commenceGameCountdown() {
         this.timerTextEntity = createText(
             this.renderer, vec2.fromValues(this.renderer.gl.canvas.width / 2, this.renderer.gl.canvas.height / 2), 
             "3", vec4.fromValues(1, 1, 1, 1), 1.1)
@@ -193,16 +205,33 @@ class WorldSystem {
         for (const collision of registry.collisions.components) {
             // Ball collides with other objects
             if (collision.entity === this.ball) {
-                
+
                 // Ball collides with the horizontal screen borders
                 if (registry.endGameWalls.has(collision.entityOther)) {
                     const endGameWall = registry.endGameWalls.get(collision.entityOther)
-                    
+
+                    // If player is in multiplayer, send the collision event to the server
+                    if (this.isMultiplayer) {
+                        const ball_motion = registry.motions.get(this.ball)
+                        const wall_motion = registry.motions.get(collision.entityOther)
+
+                        this.multiplayerSystem.sendMessage(new CollisionMessage(
+                            ball_motion.position,
+                            ball_motion.positionalVel,
+                            wall_motion.position,
+                            wall_motion.scale,
+                            endGameWall.isLeft ? 0 : 1
+                        ))
+
+                        break
+                    }
+
                     if (endGameWall.isLeft) {
                         this.opponentScore += 1
                     } else {
                         this.playerScore += 1
                     }
+
 
                     this.reinitializeWorld()
                     break
@@ -210,6 +239,21 @@ class WorldSystem {
 
                 // Ball collides with a wall
                 if (registry.walls.has(collision.entityOther)) {
+                    if (this.isMultiplayer) {
+                        const ball_motion = registry.motions.get(this.ball)
+                        const wall_motion = registry.motions.get(collision.entityOther)
+
+                        this.multiplayerSystem.sendMessage(new CollisionMessage(
+                            ball_motion.position,
+                            ball_motion.positionalVel,
+                            wall_motion.position,
+                            wall_motion.scale,
+                            1000
+                        ))
+                        
+                        break
+                    }
+
                     let ballMotion = registry.motions.get(this.ball)
                     let otherMotion = registry.motions.get(collision.entityOther)
 
@@ -238,7 +282,7 @@ class WorldSystem {
         registry.collisions.clear()
     }
 
-    public onKeyUp(e: KeyboardEvent) {
+    private onKeyUp(e: KeyboardEvent) {
         if (this.isPaused) return
         if (!registry.motions.has(this.player)) return
 
@@ -249,7 +293,7 @@ class WorldSystem {
         }
     }
 
-    public onKeyDown(e: KeyboardEvent) {
+    private onKeyDown(e: KeyboardEvent) {
         if (this.currentScreen !== GAME_SCREEN.GAME_SCREEN) {
             this.screenSystem.handleKeyDown(e)
             return
@@ -277,7 +321,7 @@ class WorldSystem {
         }
     }
     
-    public onMouseMove(e: MouseEvent) {
+    private onMouseMove(e: MouseEvent) {
         // User is in a menu
         if (this.currentScreen !== GAME_SCREEN.GAME_SCREEN) {
             this.screenSystem.checkMouseOverUI(e)
@@ -285,7 +329,7 @@ class WorldSystem {
         }
     }
 
-    public onMouseDown(e: MouseEvent) {
+    private onMouseDown(e: MouseEvent) {
         if (this.currentScreen !== GAME_SCREEN.GAME_SCREEN) {
             this.screenSystem.checkMouseDown(e)
         }

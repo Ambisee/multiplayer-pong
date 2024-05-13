@@ -51,3 +51,5 @@ class CollisionMessage extends BaseMessage {
         ])
     }
 }
+
+export default CollisionMessage

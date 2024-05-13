@@ -11,6 +11,8 @@ import PreGameScreen from "../screens/pre_game_screen"
 type ScreenMap = Map<GAME_SCREEN, BaseScreen>
 
 class ScreenSystem {
+    // private tabIndex: number
+    
     public screenEntities: number[]
     public buttonToCallbacksMap: ButtonCallback[]
     public keyToCallback: Map<string, (e: KeyboardEvent) => void>
@@ -18,6 +20,8 @@ class ScreenSystem {
     public gameScreenToRender: ScreenMap
 
     public constructor() {
+        // this.tabIndex = -1
+
         this.screenEntities = []
         this.buttonToCallbacksMap = []
         this.keyToCallback = new Map()
@@ -41,6 +45,7 @@ class ScreenSystem {
             const component = registry.buttons.components[i]
 
             if (this.isMouseOver(entity, e.x, e.y)) {
+                // this.tabIndex = i // Assuming that the number of buttons matches the length of the buttonToCallbacksMap array
                 mouseOverEntities.push(entity)
                 component.isMouseHovering = true
                 component.onMouseEnter(e)
@@ -60,6 +65,23 @@ class ScreenSystem {
     public handleKeyDown(e: KeyboardEvent) {
         const callback = this.keyToCallback.get(e.key)
         if (callback !== undefined) callback(e)
+
+        // if (e.key == "Tab") {
+        //     if (this.tabIndex === -1) {
+        //         this.tabIndex = 0
+        //     } else {
+        //         const prevButton = registry.buttons.get(this.buttonToCallbacksMap[this.tabIndex].entity)
+                
+        //         prevButton.onMouseExit()
+        //         prevButton.isMouseHovering = false
+                
+        //         this.tabIndex = (this.tabIndex + 1) % this.buttonToCallbacksMap.length
+        //     }
+            
+        //     const curButton = registry.buttons.get(this.buttonToCallbacksMap[this.tabIndex].entity)
+        //     curButton.onMouseEnter()
+        //     curButton.isMouseHovering = true
+        // }
     }
 
     public checkMouseDown(e: MouseEvent) {

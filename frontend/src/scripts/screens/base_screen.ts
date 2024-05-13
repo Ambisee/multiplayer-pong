@@ -5,9 +5,9 @@ import WorldSystem from "../ecs_scripts/world_system"
 
 interface ButtonCallback {
     entity: number,
-    onMouseDown: (e: MouseEvent, ...args: unknown[]) => void,
-    onMouseEnter: (e: MouseEvent, ...args: unknown[]) => void,
-    onMouseExit: (e: MouseEvent, ...args: unknown[]) => void
+    onMouseDown: (e?: MouseEvent, ...args: unknown[]) => void,
+    onMouseEnter: (e?: MouseEvent, ...args: unknown[]) => void,
+    onMouseExit: (e?: MouseEvent, ...args: unknown[]) => void
 }
 
 class BaseScreen {

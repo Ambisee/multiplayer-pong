@@ -10,3 +10,5 @@ class PlayAgainMessage extends BaseMessage {
         return new Uint8Array([CLIENT_EVENT.PLAY_AGAIN])
     }
 }
+
+export default PlayAgainMessage
