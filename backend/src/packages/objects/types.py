@@ -1,0 +1,38 @@
+from typing import Tuple
+from enum import Enum
+
+
+Vec2 = Tuple[int, int]
+
+
+class CLIENT_EVENT(Enum):
+    CONNECT = 0
+    DISCONNECT = CONNECT + 1
+    
+    MOTION = DISCONNECT + 1
+    COLLISION = MOTION + 1
+    
+    PLAY_AGAIN = COLLISION + 1
+    CLIENT_EVENT_COUNT = PLAY_AGAIN + 1
+
+
+class SERVER_EVENT(Enum):
+    CONNECTED = 0
+    OP_DISCONNECT = CONNECTED + 1
+    COUNTDOWN_START = OP_DISCONNECT + 1
+    ROUND_START = COUNTDOWN_START + 1
+
+    OP_MOTION = ROUND_START + 1
+    COLLISION_MOTION = OP_MOTION + 1
+    ROUND_END = COLLISION_MOTION + 1
+    
+    RESULT = ROUND_END + 1
+    PLAY_AGAIN = RESULT + 1
+    SERVER_EVENT_COUNT = PLAY_AGAIN + 1
+
+
+class ROOM_STATE(Enum):
+    IDLE = 0
+    GAME = IDLE + 1
+    END = GAME + 1
+    STATE_COUNT = END + 1

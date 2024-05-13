@@ -1,16 +1,21 @@
 import asyncio
+import logging
+
 import websockets
 
-
-async def handle_client(ws: websockets.WebSocketServerProtocol):
-    while True:
-        await ws.recv()
+from packages.api.server import handle_connection
 
 
 async def main():
-    async with websockets.serve(handle_client, "", 8000):
-        asyncio.Future()
+    logging.info("APP: Booting up WebSocket server...")
+    async with websockets.serve(handle_connection, "localhost", 8001, logger=None):
+        await asyncio.Future()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
+
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logging.info("APP: App exited.")
