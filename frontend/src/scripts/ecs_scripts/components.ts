@@ -117,39 +117,21 @@ class ScreenState extends Component {
     }
 }
 
-class Animation extends Component {
-    /**
-     * The duration of the animation
-     */
-    public duration: number
-    
-    /**
-     * The total number of frames in the animation
-     */
-    public steps: number
-    
-    /**
-     * The callback functions that corresponds to each step in the animation.
-     * The size must be equal to `steps`
-     */
-    public callbacks: Function[]
-    
-    /**
-     * The current step the animation is on, must be in the range of `[0, steps - 1]`
-     */
-    public currentStep: number
+class DelayedCallback extends Component {
+    public timeMs: number
+    public isStarted: boolean
+    public callback: Function
 
     public constructor(
-        duration: number = 0,
-        steps: number = 0,
-        callbacks: Function[] = [],
-        currentStep: number = 0,
+        timeMs: number = 0,
+        callback: Function = () => {},
+        isStarted: boolean = true
     ) {
         super()
-        this.duration = duration
-        this.steps = steps
-        this.callbacks = callbacks
-        this.currentStep = currentStep
+
+        this.timeMs = timeMs
+        this.callback = callback
+        this.isStarted = true
     }
 }
 
@@ -193,7 +175,9 @@ enum RENDER_LAYER {
 enum GAME_SCREEN {
     MAIN_MENU = 0,
     GAME_SCREEN = MAIN_MENU + 1,
-    PAUSE_MENU = GAME_SCREEN + 1,
+    PRE_GAME_SCREEN = GAME_SCREEN + 1,
+    POST_GAME_SCREEN = PRE_GAME_SCREEN + 1,
+    PAUSE_MENU = POST_GAME_SCREEN + 1,
     END_SCREEN = PAUSE_MENU + 1,
     GAME_SCREEN_COUNT = END_SCREEN + 1
 }
@@ -219,8 +203,7 @@ class RenderRequest extends Component {
 }
 
 export {
-    Motion, Player, RenderRequest, NonCollidable, Collision, 
-    Wall, Ball, Opponent, Text, Button, ScreenState, EndGameWall,
-    Animation,
+    Motion, Player, RenderRequest, NonCollidable, Collision, Wall, Ball, Opponent, 
+    Text, Button, ScreenState, EndGameWall, DelayedCallback,
     GEOMETRY, EFFECTS, TEXTURE, RENDER_LAYER, GAME_SCREEN
 }

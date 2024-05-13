@@ -3,6 +3,7 @@ import { registry } from "./ecs_registry"
 import { Entity } from "./ecs"
 import { EFFECTS, EndGameWall, GEOMETRY, RENDER_LAYER, Text } from "./components"
 import RenderSystem from "./render_system"
+import { setTextContent } from "../helper_scripts/component_helpers"
 
 function createRectangle(position: vec2, scale: vec2, color: vec4): number {
     const entity = Entity.generate()
@@ -92,25 +93,12 @@ function createText(renderer: RenderSystem, position: vec2, content: string, col
     const entity = Entity.generate()
 
     const motion = registry.motions.emplace(entity)
-    motion.position = position
-    
-    let overallWidth = 0
-    let overallHeight = 0
-    
-    let glyph = renderer.characterMaps.get(content[0])
-    if (glyph === undefined) throw Error(`Unrecognized character: ${content[0]} - ${content.charCodeAt(0)}`)
-    
-    for (const ch of content) {
-        glyph = renderer.characterMaps.get(content[0])
-        if (glyph === undefined) throw Error(`Unrecognized character: ${content[0]} - ${content.charCodeAt(0)}`)
-        
-        overallWidth += glyph.advance * scale
-        overallHeight = Math.max(glyph.size[1] * scale, overallHeight)
-    }
-            
-    motion.scale = vec2.fromValues(overallWidth, overallHeight)
-    const text = registry.texts.insert(entity, new Text(content, scale))
+    const text = registry.texts.emplace(entity)
     const renderRequest = registry.renderRequests.emplace(entity)
+
+    motion.position = position
+    text.scale = scale
+    setTextContent(renderer, entity, content)
 
     renderRequest.effect = EFFECTS.TEXT
     renderRequest.geometry = GEOMETRY.TEXT
@@ -120,7 +108,17 @@ function createText(renderer: RenderSystem, position: vec2, content: string, col
     return entity
 }
 
+function createDelayedCallback(callback: Function, timeMs: number) {
+    const entity = Entity.generate()
+    
+    const delayedCallback = registry.delayedCallbacks.emplace(entity)
+    delayedCallback.callback = callback
+    delayedCallback.timeMs = timeMs
+
+    return entity
+}
+
 export {
     createRectangle, createEllipse, createWall, createScreenBoundary, createBall,
-    createText, 
+    createText, createDelayedCallback
 }

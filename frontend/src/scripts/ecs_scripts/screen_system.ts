@@ -6,6 +6,7 @@ import WorldSystem from "./world_system"
 import { registry } from "./ecs_registry"
 import { BoundingBox } from "./common"
 import PauseMenu from "../screens/pause_menu"
+import PreGameScreen from "../screens/pre_game_screen"
 
 type ScreenMap = Map<GAME_SCREEN, BaseScreen>
 
@@ -22,13 +23,13 @@ class ScreenSystem {
         this.keyToCallback = new Map()
         
         this.gameScreenToRender = new Map()
+        
         this.gameScreenToRender.set(
             GAME_SCREEN.MAIN_MENU, new MainMenu(this.screenEntities, this.buttonToCallbacksMap, this.keyToCallback))
         this.gameScreenToRender.set(
             GAME_SCREEN.PAUSE_MENU, new PauseMenu(this.screenEntities, this.buttonToCallbacksMap, this.keyToCallback))
-
-
-        this.gameScreenToRender.get(GAME_SCREEN.PAUSE_MENU)
+        this.gameScreenToRender.set(
+            GAME_SCREEN.PRE_GAME_SCREEN, new PreGameScreen(this.screenEntities, this.buttonToCallbacksMap, this.keyToCallback))
     }
 
     public checkMouseOverUI(e: MouseEvent) {
@@ -42,10 +43,10 @@ class ScreenSystem {
             if (this.isMouseOver(entity, e.x, e.y)) {
                 mouseOverEntities.push(entity)
                 component.isMouseHovering = true
-                component.onMouseEnter()
+                component.onMouseEnter(e)
             } else {
                 component.isMouseHovering = false
-                component.onMouseExit()
+                component.onMouseExit(e)
             }
         }
 
@@ -62,9 +63,16 @@ class ScreenSystem {
     }
 
     public checkMouseDown(e: MouseEvent) {
-        for (const component of registry.buttons.components) {
-            if (component.isMouseHovering) {
-                component.onMouseDown()
+        if (e.button !== 0) {
+            return
+        }
+
+        for (let i = 0; i < registry.buttons.length(); i++) {
+            const component = registry.buttons.components[i]
+            const entity = registry.buttons.entities[i]
+
+            if (component.isMouseHovering && this.isMouseOver(entity, e.x, e.y)) {
+                component.onMouseDown(e)
             }
         }
 

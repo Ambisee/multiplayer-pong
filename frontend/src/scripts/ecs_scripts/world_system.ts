@@ -1,20 +1,26 @@
+import { vec2, vec3, vec4 } from "gl-matrix"
+
 import RenderSystem from "./render_system"
 import PhysicSystem from "./physics_system"
-import { registry } from "./ecs_registry"
-import { createBall, createEllipse, createRectangle, createScreenBoundary, createText } from "./world_init"
-import { vec2, vec3, vec4 } from "gl-matrix"
-import { clamp } from "./common"
-import { GAME_SCREEN, GEOMETRY } from "./components"
 import ScreenSystem from "./screen_system"
+import MultiplayerSystem from "./multiplayer_system"
+
+import { registry } from "./ecs_registry"
+import { BoundingBox } from "./common"
+import { GAME_SCREEN } from "./components"
 import { BaseScreen } from "../screens/base_screen"
 import { Entity } from "./ecs"
+import { setTextContent } from "../helper_scripts/component_helpers"
+import { createBall, createDelayedCallback, createRectangle, createScreenBoundary, createText } from "./world_init"
 
 class WorldSystem {
     private renderer: RenderSystem
     private screenSystem: ScreenSystem
+    private multiplayerSystem: MultiplayerSystem
     private ball: number
     private player: number
     private opponent: number
+    private timerTextEntity: number
     
     public currentScreen: GAME_SCREEN = GAME_SCREEN.MAIN_MENU
     public isPaused: boolean = false
@@ -24,6 +30,8 @@ class WorldSystem {
     public constructor(renderer: RenderSystem) {
         this.renderer = renderer
         this.screenSystem = new ScreenSystem()
+        this.multiplayerSystem = new MultiplayerSystem("ws://127.0.0.1:8001")
+        this.multiplayerSystem.init()
 
         this.init()
     }
@@ -33,16 +41,25 @@ class WorldSystem {
 
         // Attach the user input listeners and attach the callbacks
         window.addEventListener("keydown", (e) => { this.onKeyDown(e) })
+        window.addEventListener("keyup", (e) => { this.onKeyUp(e) })
         window.addEventListener("mousemove", (e) => { this.onMouseMove(e) })
         window.addEventListener("mousedown", (e) => { this.onMouseDown(e) })
     }
 
     public step(elapsedTimeMs: number) {
-        this.screenSystem.step()
-        
-        if (this.isPaused) {
-            return
+        // Decrement the time on the delayed callbacks and call them if time runs out
+        for (let i = 0; i < registry.delayedCallbacks.length(); i++) {
+            const delayedCallback = registry.delayedCallbacks.components[i]
+            if (!this.isPaused) {
+                delayedCallback.timeMs -= elapsedTimeMs
+            }
+            
+            if (delayedCallback.timeMs <= 0) {
+                delayedCallback.callback()
+                registry.removeAllComponentsOf(registry.delayedCallbacks.entities[i])
+            }
         }
+        
     }
 
     public resetScore() {
@@ -93,27 +110,6 @@ class WorldSystem {
             registry.nonCollidables.emplace(line)
         }
         
-        // Create the ball
-        const ballXMin = 3 * this.renderer.gl.canvas.width / 8
-        const ballXMax = 5 * this.renderer.gl.canvas.width / 8
-        const ballYMin = 100
-        const ballYMax = this.renderer.gl.canvas.height - 100
-
-        const ballX = ballXMin + (Math.random() * (ballXMax - ballXMin))
-        const ballY = ballYMin + (Math.random() * (ballYMax - ballYMin))
-        const ballVelX = 7.5 * (-1 + 2 * Math.round(Math.random()))
-        const ballVelY = 7.5 * (-1 + 2 * Math.round(Math.random()))
-
-        this.ball = createBall(
-            // vec2.fromValues(this.renderer.gl.canvas.width / 2, this.renderer.gl.canvas.height / 2),
-            vec2.fromValues(ballX, ballY),
-            vec2.fromValues(50, 50),
-            vec4.fromValues(1, 1, 1, 1)
-        )
-        
-        const ballMotion = registry.motions.get(this.ball)
-        ballMotion.positionalVel = vec2.fromValues(ballVelX, ballVelY)
-        
         // Create the player
         this.player = createRectangle(
             vec2.fromValues(75, this.renderer.gl.canvas.height / 2),
@@ -132,13 +128,64 @@ class WorldSystem {
         registry.walls.emplace(this.opponent)
 
         // Create the score board
-        const textE = createText(
+        const scoreboardTextE = createText(
             this.renderer, vec2.fromValues(this.renderer.gl.canvas.width / 2, 0),
             `${this.playerScore} - ${this.opponentScore}`, vec4.fromValues(0.65, 0.65, 0.65, 1), 1
         )
 
-        const textM = registry.motions.get(textE)
-        textM.position[1] += textM.scale[1] / 2
+        const scoreboardTextM = registry.motions.get(scoreboardTextE)
+        scoreboardTextM.position[1] += scoreboardTextM.scale[1] / 2
+
+        // In singleplayer, this function should be called immediately
+        // In multiplayer, this function should be called only after two players are in a room
+        this.commenceGameCountdown()
+    }
+
+    public commenceGameCountdown() {
+        this.timerTextEntity = createText(
+            this.renderer, vec2.fromValues(this.renderer.gl.canvas.width / 2, this.renderer.gl.canvas.height / 2), 
+            "3", vec4.fromValues(1, 1, 1, 1), 1.1)
+        const timerText = registry.texts.get(this.timerTextEntity)
+
+        // Timer count: 2
+        createDelayedCallback(() => {
+            timerText.content = "2"
+        }, 1000)
+        
+        // Timer count: 1
+        createDelayedCallback(() => {
+            timerText.content = "1"
+        }, 2000)
+
+        // Timer count: 0
+        createDelayedCallback(() => {
+            // Create the ball
+            const ballXMin = 3 * this.renderer.gl.canvas.width / 8
+            const ballXMax = 5 * this.renderer.gl.canvas.width / 8
+            const ballYMin = 100
+            const ballYMax = this.renderer.gl.canvas.height - 100
+
+            const ballX = ballXMin + (Math.random() * (ballXMax - ballXMin))
+            const ballY = ballYMin + (Math.random() * (ballYMax - ballYMin))
+            const ballVelX = 7.5 * (-1 + 2 * Math.round(Math.random()))
+            const ballVelY = 7.5 * (-1 + 2 * Math.round(Math.random()))
+
+            this.ball = createBall(
+                // vec2.fromValues(this.renderer.gl.canvas.width / 2, this.renderer.gl.canvas.height / 2),
+                vec2.fromValues(ballX, ballY),
+                vec2.fromValues(50, 50),
+                vec4.fromValues(1, 1, 1, 1)
+            )
+            
+            const ballMotion = registry.motions.get(this.ball)
+            ballMotion.positionalVel = vec2.fromValues(ballVelX, ballVelY)
+
+            setTextContent(this.renderer, this.timerTextEntity, "Start")
+
+            createDelayedCallback(() => {
+                registry.removeAllComponentsOf(this.timerTextEntity)
+            }, 1000)
+        }, 3000)
     }
 
     public handleCollision(elapsedTimeMs: number) {
@@ -169,10 +216,37 @@ class WorldSystem {
                     PhysicSystem.reflectObject(ballMotion, otherMotion)
                 }
             }
+
+            // Paddle collision
+            if (collision.entity === this.player) {
+                if (registry.walls.has(collision.entityOther)) {
+                    const p_motion = registry.motions.get(this.player)
+                    const w_motion = registry.motions.get(collision.entityOther)
+
+                    const w_bb = BoundingBox.getBoundingBox(w_motion.position, w_motion.scale)
+
+                    if (p_motion.positionalVel[1] > 0) {
+                        p_motion.position[1] = w_bb.top - p_motion.scale[1] / 2
+                    } else if (p_motion.positionalVel[1] < 0) {
+                        p_motion.position[1] = w_bb.bottom + p_motion.scale[1] / 2
+                    }
+                }
+            }
         }
 
         // Clear all collision components
         registry.collisions.clear()
+    }
+
+    public onKeyUp(e: KeyboardEvent) {
+        if (this.isPaused) return
+        if (!registry.motions.has(this.player)) return
+
+
+        const p_motion = registry.motions.get(this.player)
+        if (p_motion.positionalVel[1] != 0) {
+            p_motion.positionalVel[1] = 0
+        }
     }
 
     public onKeyDown(e: KeyboardEvent) {
@@ -181,12 +255,22 @@ class WorldSystem {
             return
         }
         
+        const p_motion = registry.motions.get(this.player)
+
         switch (e.key) {
             case "Escape":
+                e.preventDefault()
+
                 this.isPaused = !this.isPaused
                 registry.screenStates.components[0].darkenScreenFactor = 0.9
                 this.currentScreen = GAME_SCREEN.PAUSE_MENU
                 this.reinitializeWorld()
+                break
+            case "w":
+                if (!this.isPaused) p_motion.positionalVel[1] = -5
+                break
+            case "s":
+                if (!this.isPaused) p_motion.positionalVel[1] = 5
                 break
             default:
                 break
@@ -198,14 +282,6 @@ class WorldSystem {
         if (this.currentScreen !== GAME_SCREEN.GAME_SCREEN) {
             this.screenSystem.checkMouseOverUI(e)
             return
-        }
-
-        // User is currently in-game and is not paused
-        if (!this.isPaused) {
-            let m = registry.motions.get(this.player)
-            m.position[1] = clamp(
-                e.y, m.scale[1] / 2, this.renderer.gl.canvas.height - m.scale[1] / 2
-            )
         }
     }
 

@@ -12,21 +12,32 @@
         }
 
         html, body {
-            /* background-color: red; */
+            background-color: black;
             position: relative;
             height: 100%;
             width: 100%;
+            
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
 
-        #webgl-context {
-            display: block;
-            width: 100%;
-            height: 100%;
+        .hidden {
+            display: none;
+        }
+
+        h1, h2, h3, h4 {
+            color: white;
+            font-family: sans-serif;
         }
     </style>
 </head>
 <body>
-    <canvas id="webgl-context"></canvas>
-    <script type="module" src="./ecs_scripts/main.ts"></script>
+    <h1 class="fullscreen-notice">This game requires fullscreen to be toggled.</h1>
+    <h4 class="fullscreen-notice">Press <code>F11</code> to toggle fullscreen</h4>
+    
+    <canvas class="hidden" id="webgl-context"></canvas>
+    <script type="module" src="./scripts/main.ts"></script>
 </body>
 </html>

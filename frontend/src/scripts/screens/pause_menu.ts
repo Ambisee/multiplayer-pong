@@ -16,12 +16,8 @@ class PauseMenu extends BaseScreen {
 
         // Create the title
         const titleEntity = createText(
-            renderer, 
-            vec2.fromValues(localGL.canvas.width / 2, 0),
-            "Pause",
-            vec4.fromValues(1, 1, 1, 1),
-            1.25
-        )
+            renderer, vec2.fromValues(localGL.canvas.width / 2, 0),
+            "Pause", vec4.fromValues(1, 1, 1, 1), 1.25)
 
         const titleMotion = registry.motions.get(titleEntity)
         titleMotion.position[1] += (0.75 * titleMotion.scale[1])

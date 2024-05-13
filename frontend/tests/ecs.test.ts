@@ -1,5 +1,5 @@
-import { ComponentContainer } from "../src/ecs_scripts/ecs"
-import { EFFECTS, GEOMETRY, Motion, Player, RENDER_LAYER, RenderRequest } from "../src/ecs_scripts/components"
+import { ComponentContainer } from "../src/scripts/ecs_scripts/ecs"
+import { EFFECTS, GEOMETRY, Motion, Player, RENDER_LAYER, RenderRequest } from "../src/scripts/ecs_scripts/components"
 import { vec2 } from "gl-matrix"
 
 describe("ECS tests", () => {

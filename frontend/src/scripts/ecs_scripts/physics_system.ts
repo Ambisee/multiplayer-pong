@@ -11,8 +11,8 @@ class PhysicSystem {
     }
 
     public step(elapsedTimeMs: number) {
-        this.processMovement()
-        this.checkCollision()
+        this.processMovement(elapsedTimeMs)
+        this.checkCollision(elapsedTimeMs)
     }
 
     public static reflectObject(reflectedMotion: Motion, reflectorMotion: Motion) {
@@ -50,14 +50,16 @@ class PhysicSystem {
         }
     }
 
-    private processMovement() {
+    private processMovement(elapsedTimeMs: number) {
         for (const motion of registry.motions.components) {
-            motion.rotation += motion.rotationalVel
+            // Rotate by the rotation velocity
+            motion.rotation += motion.rotationalVel * elapsedTimeMs
+
             vec2.add(motion.position, motion.position, motion.positionalVel)
         }
     }
 
-    private checkCollision() {
+    private checkCollision(elapsedTimeMs: number) {
         // Get the first entity to check against
         for (let i = 0; i < registry.motions.length(); i++) {
             let e1 = registry.motions.entities[i]

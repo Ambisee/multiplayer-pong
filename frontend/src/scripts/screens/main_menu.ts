@@ -5,7 +5,7 @@ import { BaseScreen } from "./base_screen"
 import { registry } from "../ecs_scripts/ecs_registry"
 import { ButtonBuilder } from "../ecs_scripts/ui_init"
 import WorldSystem from "../ecs_scripts/world_system"
-import { Animation, GAME_SCREEN } from "../ecs_scripts/components"
+import { GAME_SCREEN } from "../ecs_scripts/components"
 
 class MainMenu extends BaseScreen {
 
@@ -19,7 +19,7 @@ class MainMenu extends BaseScreen {
             renderer, 
             vec2.fromValues(localGL.canvas.width / 2, 0),
             "Neo Pong",
-            vec4.fromValues(1, 1, 1, 1),
+            this.WHITE,
             1.25
         )
 
@@ -60,6 +60,7 @@ class MainMenu extends BaseScreen {
         const mPlayBtnBoxRR = registry.renderRequests.get(mPlayBtnBuilder.buttonComponent.associatedEntities[0])
 
         this.buttonToCallbacksMap = [
+            // Single player button callbacks
             {
                 entity: sPlayBtnBuilder.entity,
                 onMouseDown: (e: MouseEvent) => {
@@ -78,6 +79,8 @@ class MainMenu extends BaseScreen {
                     sPlayBtnBuilder.buttonComponent.isMouseHovering = false
                 }
             },
+            
+            // Multiplayer button callback
             {
                 entity: mPlayBtnBuilder.entity, 
                 onMouseDown: (e: MouseEvent) => {

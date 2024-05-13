@@ -25,6 +25,7 @@ class Character {
 class RenderSystem {
     public gl: WebGL2RenderingContext
     public characterMaps: Map<string, Character> = new Map()
+    public DEFAULT_FONTSIZE: number = 64 // in pixels
     
     private effects: Array<WebGLProgram>
     private vertexBuffers: Array<WebGLBuffer>
@@ -146,6 +147,10 @@ class RenderSystem {
     }
 
     public draw(low: RENDER_LAYER, high: RENDER_LAYER) {
+        if (registry.renderRequests.length() < 1) {
+            return
+        }
+
         // Sort the render requests by their layer
         registry.renderRequests.sort((a, b) => {
             const rr1 = registry.renderRequests.get(a)
@@ -158,6 +163,10 @@ class RenderSystem {
         // Find the set of entities to be rendered based on the given `low` and `high`
         let start = -1
         let end = -1
+
+        if (registry.renderRequests.components[0].renderLayer > low) {
+            start = 0
+        }
 
         for (let i = 0; i < registry.renderRequests.length(); i++) {
             const component = registry.renderRequests.components[i]

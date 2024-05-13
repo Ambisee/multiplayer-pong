@@ -1,5 +1,5 @@
-import { Collision } from "../src/ecs_scripts/components"
-import { ECSRegistry } from "../src/ecs_scripts/ecs_registry"
+import { Collision } from "../src/scripts/ecs_scripts/components"
+import { ECSRegistry } from "../src/scripts/ecs_scripts/ecs_registry"
 
 describe("ECS registry tests", () => {
     let registry: ECSRegistry

@@ -101,23 +101,23 @@ class StaticAssetManager {
 
         // await Promise.all(sourceFetches)
 
-        this.shaderSources.shape.vertexSource.content = fs.readFileSync(path.join(__dirname, "../../shaders/shape.vs.glsl"), "utf-8")
-        this.shaderSources.shape.fragmentSource.content = fs.readFileSync(path.join(__dirname, "../../shaders/shape.fs.glsl"), "utf-8")
-        this.shaderSources.text.vertexSource.content = fs.readFileSync(path.join(__dirname, "../../shaders/text.vs.glsl"), "utf-8")
-        this.shaderSources.text.fragmentSource.content = fs.readFileSync(path.join(__dirname, "../../shaders/text.fs.glsl"), "utf-8")
-        this.shaderSources.screen.vertexSource.content = fs.readFileSync(path.join(__dirname, "../../shaders/screen.vs.glsl"), "utf-8")
-        this.shaderSources.screen.fragmentSource.content = fs.readFileSync(path.join(__dirname, "../../shaders/screen.fs.glsl"), "utf-8")
+        this.shaderSources.shape.vertexSource.content = fs.readFileSync(path.join(__dirname, "../../../shaders/shape.vs.glsl"), "utf-8")
+        this.shaderSources.shape.fragmentSource.content = fs.readFileSync(path.join(__dirname, "../../../shaders/shape.fs.glsl"), "utf-8")
+        this.shaderSources.text.vertexSource.content = fs.readFileSync(path.join(__dirname, "../../../shaders/text.vs.glsl"), "utf-8")
+        this.shaderSources.text.fragmentSource.content = fs.readFileSync(path.join(__dirname, "../../../shaders/text.fs.glsl"), "utf-8")
+        this.shaderSources.screen.vertexSource.content = fs.readFileSync(path.join(__dirname, "../../../shaders/screen.vs.glsl"), "utf-8")
+        this.shaderSources.screen.fragmentSource.content = fs.readFileSync(path.join(__dirname, "../../../shaders/screen.fs.glsl"), "utf-8")
 
         // Retrieve font related data
         this.fontData.spaceMono.info = JSON.parse(
-            fs.readFileSync(path.join(__dirname, "../../assets/fonts/Space_mono.json"), "utf-8")
+            fs.readFileSync(path.join(__dirname, "../../../assets/fonts/Space_mono.json"), "utf-8")
         )
 
         const fontFaceImage = new Image()
         await new Promise((resolve, reject) => {
             fontFaceImage.onload = (e) => resolve(e)
             fontFaceImage.onerror = (e) => reject(e)
-            fontFaceImage.src = (new URL("../../assets/fonts/Space_mono.png", import.meta.url)).toString()
+            fontFaceImage.src = (new URL("../../../assets/fonts/Space_mono.png", import.meta.url)).toString()
         })
         
         this.fontData.spaceMono.image = fontFaceImage
