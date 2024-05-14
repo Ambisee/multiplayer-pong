@@ -3,7 +3,7 @@ import { vec2, vec3, vec4 } from "gl-matrix"
 import RenderSystem from "./render_system"
 import PhysicSystem from "./physics_system"
 import ScreenSystem from "./screen_system"
-import MultiplayerSystem from "./multiplayer_system"
+import MultiplayerSystem, { HandlerCallback } from "./multiplayer_system"
 
 import { registry } from "./ecs_registry"
 import { BoundingBox } from "./common"
@@ -152,7 +152,10 @@ class WorldSystem {
         scoreboardTextM.position[1] += scoreboardTextM.scale[1] / 2
 
         // Create the name displays
-        this.nameDisplayEntities = ["Player", "Waiting for opponent..."].map(value => {
+        const displayNames = ["Player", "Waiting for opponent..."]
+        if (!this.isMultiplayer) {displayNames[1] = "Opponent"}
+
+        this.nameDisplayEntities = displayNames.map(value => {
             return createText(
                 this.renderer, vec2.fromValues(0, 0.175 * this.renderer.DEFAULT_FONTSIZE), value, vec4.fromValues(1, 1, 1, 1), 0.35
             )
@@ -195,6 +198,10 @@ class WorldSystem {
 
             this.commenceGameCountdown()
         })
+    }
+
+    public setMultiplayerHandler(serverEvent: SERVER_EVENT, handlerCallback: HandlerCallback) {
+        this.multiplayerSystem.setHandler(serverEvent, handlerCallback)
     }
 
     public closeMultiplayer() {
@@ -269,13 +276,20 @@ class WorldSystem {
                         const ball_motion = registry.motions.get(this.ball)
                         const wall_motion = registry.motions.get(collision.entityOther)
 
-                        this.multiplayerSystem.sendMessage(new CollisionMessage(
+                        const message = new CollisionMessage(
                             ball_motion.position,
                             ball_motion.positionalVel,
                             wall_motion.position,
                             wall_motion.scale,
                             endGameWall.isLeft ? 0 : 1
-                        ))
+                        )
+                        
+                        if (!this.isPlayer1) {
+                            message.ball_position[0] = this.renderer.gl.canvas.width - message.ball_position[0]
+                            message.ball_velocity[0] *= -1
+                        }
+
+                        this.multiplayerSystem.sendMessage(message)
 
                         break
                     }

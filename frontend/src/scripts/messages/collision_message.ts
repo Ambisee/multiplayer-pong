@@ -4,11 +4,11 @@ import { CLIENT_EVENT } from "./message_enum"
 import { shortToArray } from "../helper_scripts/messaging_helpers"
 
 class CollisionMessage extends BaseMessage {
-    private ball_position: vec2
-    private ball_velocity: vec2
-    private wall_position: vec2
-    private wall_scale: vec2
-    private tag: number
+    public ball_position: vec2
+    public ball_velocity: vec2
+    public wall_position: vec2
+    public wall_scale: vec2
+    public tag: number
     
     public constructor(
         ball_position: vec2,
