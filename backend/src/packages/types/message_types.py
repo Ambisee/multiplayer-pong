@@ -1,8 +1,4 @@
-from typing import Tuple
 from enum import Enum
-
-
-Vec2 = Tuple[int, int]
 
 
 class CLIENT_EVENT(Enum):
@@ -29,10 +25,3 @@ class SERVER_EVENT(Enum):
     RESULT = ROUND_END + 1
     PLAY_AGAIN = RESULT + 1
     SERVER_EVENT_COUNT = PLAY_AGAIN + 1
-
-
-class ROOM_STATE(Enum):
-    IDLE = 0
-    GAME = IDLE + 1
-    END = GAME + 1
-    STATE_COUNT = END + 1

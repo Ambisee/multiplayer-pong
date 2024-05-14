@@ -4,6 +4,7 @@ import logging
 import websockets
 
 from ..event_handlers import handlers
+from ..event_handlers.lost_connection import lost_connection
 
 
 def handle_message_loop(func):
@@ -13,6 +14,7 @@ def handle_message_loop(func):
             while True:
                 await func(ws)
         except websockets.ConnectionClosed:
+            await lost_connection(ws)
             logging.info(f"Client {ws.id} disconnected.")
     return wrapped
 

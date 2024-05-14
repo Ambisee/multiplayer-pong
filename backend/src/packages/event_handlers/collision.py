@@ -1,6 +1,8 @@
 from websockets import WebSocketServerProtocol
 
 from ..managers import room_manager
+from ..types import CollisionPayload
+from ..ecs_systems.physics_system import PhysicSystem
 
 
 async def collision(ws: WebSocketServerProtocol, message: bytes):
@@ -12,6 +14,10 @@ async def collision(ws: WebSocketServerProtocol, message: bytes):
     else:
         index = 1
 
+    # Check if the collision payload exists already or not
+    if room.collision_payload_received[index]:
+        return
+
     # Set the message and the received message flag of the client
     room.collision_payloads[index] = message
     room.collision_payload_received[index] = True
@@ -22,3 +28,31 @@ async def collision(ws: WebSocketServerProtocol, message: bytes):
     
     # Calculate the result of the collision
     
+    # Get the values from the payload
+    p1_payload = CollisionPayload.from_bytes(room.collision_payloads[0])
+    p2_payload = CollisionPayload.from_bytes(room.collision_payloads[1])
+
+    # Calculate the result of the collision
+    if p1_payload.ball_vel[0] < 0 and p2_payload.ball_vel[0] > 0:
+        result = PhysicSystem.reflect_object(
+            p1_payload.ball_pos,
+            p1_payload.ball_vel,
+            p1_payload.wall_pos,
+            p1_payload.wall_scale,
+        )
+    elif p1_payload.ball_vel[0] > 0 and p2_payload.ball_vel[0] < 0:
+        result = PhysicSystem.reflect_object(
+            p2_payload.ball_pos,
+            p2_payload.ball_vel,
+            p2_payload.wall_pos,
+            p2_payload.wall_scale,
+        )
+    else:
+        raise Exception("Payload values doesn't match.")
+    
+    # Refresh the collision payload statuses
+    room.collision_payload_received = [False, False]
+    room.collision_payloads = [None, None]
+    
+    # Broadcast the message to the room
+    await room.broadcast(result.to_bytes())

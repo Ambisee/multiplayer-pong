@@ -37,24 +37,30 @@ class RoomManager:
         return room
         
     async def add_player(self, ws: WebSocketServerProtocol):
+        # Get a room from the queue
         room = await self.get_queue_room(ws)
 
+        # Assign the as player 1 or player 2
         if room.p1 is None:
             room.p1 = Player(ws_connection=ws)
         else:
             room.p2 = Player(ws_connection=ws)
 
+        # Map the client id to the room
         self.client_room_map[ws.id] = room
         return room
     
     async def remove_player(self, ws_id: UUID):
+        # Get the client's room
         room = self.client_room_map.get(ws_id)
         if room is None:
             return False
     
+        # Place the room back into the queue if it has two players
         if room.has_two_players():
             await self.room_queue.put(room)
 
+        # Remove the player from the room and the room mappings
         room.remove_player(ws_id)
         self.client_room_map.pop(ws_id)
 

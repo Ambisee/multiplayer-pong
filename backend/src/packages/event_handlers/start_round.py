@@ -2,7 +2,7 @@ import random
 
 from websockets import WebSocketServerProtocol
 
-from ..objects.types import SERVER_EVENT
+from ..types import SERVER_EVENT
 from ..managers import room_manager
 from ..helpers import array_to_bytes
 

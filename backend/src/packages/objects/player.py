@@ -1,6 +1,6 @@
 from websockets import WebSocketServerProtocol
 
-from ..objects.types import Vec2
+from ..types import Vec2
 
 
 class Player:
