@@ -6,7 +6,7 @@
  * @param i the starting index of the short
  * @returns 
  */
-function arrayToShort(array: Uint8Array | ArrayLike<number>, i: number): number {
+function arrayToShort(array: Uint8Array, i: number): number {
     if (i >= array.length || i + 1 >= array.length) {
         throw Error("Index out of bound.")
     }

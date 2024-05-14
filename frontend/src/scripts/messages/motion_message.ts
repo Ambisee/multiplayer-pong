@@ -11,7 +11,7 @@ class MotionMessage extends BaseMessage {
         this.position = position
     }
 
-    public toMessage(): ArrayBuffer {
+    public toMessage(): Uint8Array {
         const x = this.position[0]
         const y = this.position[1]
 

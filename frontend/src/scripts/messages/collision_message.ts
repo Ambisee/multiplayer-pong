@@ -25,7 +25,7 @@ class CollisionMessage extends BaseMessage {
         this.tag = tag
     }
 
-    public toMessage(): ArrayBuffer {
+    public toMessage(): Uint8Array {
         return new Uint8Array([
             // code
             CLIENT_EVENT.COLLISION,

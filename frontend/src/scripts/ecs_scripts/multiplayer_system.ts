@@ -2,7 +2,7 @@ import { BaseMessage } from "../messages/base_message"
 import ConnectMessage from "../messages/connect_message"
 import { SERVER_EVENT } from "../messages/message_enum"
 
-type HandlerCallback = (message: ArrayBufferLike) => void
+type HandlerCallback = (message: Uint8Array) => void
 
 class MultiplayerSystem {
     private url: string

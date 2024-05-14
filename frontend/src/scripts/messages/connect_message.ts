@@ -6,7 +6,7 @@ class ConnectMessage extends BaseMessage {
         super()
     }
 
-    public toMessage(): ArrayBufferLike {
+    public toMessage(): Uint8Array {
         // CONNECT code = 0
         return new Uint8Array([CLIENT_EVENT.CONNECT])
     }

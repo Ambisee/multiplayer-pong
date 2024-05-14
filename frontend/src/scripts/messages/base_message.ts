@@ -3,8 +3,8 @@ class BaseMessage {
 
     }
 
-    public toMessage(): ArrayBuffer {
-        return new ArrayBuffer(2)
+    public toMessage(): Uint8Array {
+        return new Uint8Array(2)
     }
 }
 

@@ -6,7 +6,7 @@ class DisconnectMessage extends BaseMessage {
         super()
     }
 
-    public toMessage(): ArrayBuffer {
+    public toMessage(): Uint8Array {
         return new Uint8Array([CLIENT_EVENT.DISCONNECT])
     }
 }

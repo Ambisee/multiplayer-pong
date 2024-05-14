@@ -14,6 +14,7 @@ import { setTextContent, setTextAlignment } from "../helper_scripts/component_he
 import { createBall, createDelayedCallback, createRectangle, createScreenBoundary, createText } from "./world_init"
 import CollisionMessage from "../messages/collision_message"
 import { SERVER_EVENT } from "../messages/message_enum"
+import { arrayToShort } from "../helper_scripts/messaging_helpers"
 
 class WorldSystem {
     private renderer: RenderSystem
@@ -198,6 +199,21 @@ class WorldSystem {
 
             this.commenceGameCountdown()
         })
+
+        // Round start
+        this.multiplayerSystem.setHandler(SERVER_EVENT.ROUND_START, (message) => {
+            if (message.length != 9) {
+                throw Error("Expected a message length of 9.")
+            }
+
+            const ball_pos = vec2.fromValues(
+                arrayToShort(message, 1), arrayToShort(message, 3))
+            const ball_vel = vec2.fromValues(
+                arrayToShort(message, 5), arrayToShort(message, 7))
+
+            this.ball = createBall(ball_pos, vec2.fromValues(50, 50), vec4.fromValues(1, 1, 1, 1))
+            registry.motions.get(this.ball).positionalVel = ball_vel
+        })
     }
 
     public setMultiplayerHandler(serverEvent: SERVER_EVENT, handlerCallback: HandlerCallback) {
@@ -244,7 +260,6 @@ class WorldSystem {
             const ballVelY = 7.5 * (-1 + 2 * Math.round(Math.random()))
 
             this.ball = createBall(
-                // vec2.fromValues(this.renderer.gl.canvas.width / 2, this.renderer.gl.canvas.height / 2),
                 vec2.fromValues(ballX, ballY),
                 vec2.fromValues(50, 50),
                 vec4.fromValues(1, 1, 1, 1)
