@@ -182,6 +182,12 @@ enum GAME_SCREEN {
     GAME_SCREEN_COUNT = END_SCREEN + 1
 }
 
+enum ALIGNMENT {
+    LEFT = 0,
+    CENTER = LEFT + 1,
+    RIGHT = CENTER + 1
+}
+
 class RenderRequest extends Component {
     public effect: EFFECTS
     public geometry: GEOMETRY
@@ -205,5 +211,5 @@ class RenderRequest extends Component {
 export {
     Motion, Player, RenderRequest, NonCollidable, Collision, Wall, Ball, Opponent, 
     Text, Button, ScreenState, EndGameWall, DelayedCallback,
-    GEOMETRY, EFFECTS, TEXTURE, RENDER_LAYER, GAME_SCREEN
+    GEOMETRY, EFFECTS, TEXTURE, ALIGNMENT, RENDER_LAYER, GAME_SCREEN
 }

@@ -7,22 +7,27 @@ import MultiplayerSystem from "./multiplayer_system"
 
 import { registry } from "./ecs_registry"
 import { BoundingBox } from "./common"
-import { GAME_SCREEN } from "./components"
+import { ALIGNMENT, GAME_SCREEN } from "./components"
 import { BaseScreen } from "../screens/base_screen"
 import { Entity } from "./ecs"
-import { setTextContent } from "../helper_scripts/component_helpers"
+import { setTextContent, setTextAlignment } from "../helper_scripts/component_helpers"
 import { createBall, createDelayedCallback, createRectangle, createScreenBoundary, createText } from "./world_init"
 import CollisionMessage from "../messages/collision_message"
+import { SERVER_EVENT } from "../messages/message_enum"
 
 class WorldSystem {
     private renderer: RenderSystem
     private screenSystem: ScreenSystem
     private multiplayerSystem: MultiplayerSystem
+    
     private ball: number
     private player: number
     private opponent: number
     private timerTextEntity: number
-    public isMultiplayer = false
+    private nameDisplayEntities: number[]
+
+    private isMultiplayer: boolean
+    private isPlayer1: boolean
     
     public currentScreen: GAME_SCREEN = GAME_SCREEN.MAIN_MENU
     public isPaused: boolean = false
@@ -33,6 +38,7 @@ class WorldSystem {
         this.renderer = renderer
         this.screenSystem = new ScreenSystem()
         this.multiplayerSystem = new MultiplayerSystem("ws://127.0.0.1:8001")
+        this.nameDisplayEntities = [-1, -1]
 
         this.init()
     }
@@ -71,6 +77,7 @@ class WorldSystem {
     public play(isMultiplayer: boolean) {
         this.currentScreen = GAME_SCREEN.GAME_SCREEN
         this.isMultiplayer = isMultiplayer
+        this.isPlayer1 = false
         this.reinitializeWorld()
         this.resetScore()
     }
@@ -144,12 +151,55 @@ class WorldSystem {
         const scoreboardTextM = registry.motions.get(scoreboardTextE)
         scoreboardTextM.position[1] += scoreboardTextM.scale[1] / 2
 
+        // Create the name displays
+        this.nameDisplayEntities = ["Player", "Waiting for opponent..."].map(value => {
+            return createText(
+                this.renderer, vec2.fromValues(0, 0.175 * this.renderer.DEFAULT_FONTSIZE), value, vec4.fromValues(1, 1, 1, 1), 0.35
+            )
+        })
+
+        setTextAlignment(this.nameDisplayEntities[0], 0, ALIGNMENT.LEFT)
+        setTextAlignment(this.nameDisplayEntities[1], this.renderer.gl.canvas.width, ALIGNMENT.RIGHT)
+
         // In singleplayer, this function should be called immediately
         // In multiplayer, this function should be called only after two players are in a room
         if (!this.isMultiplayer) {
             this.commenceGameCountdown()
         } else {
+            this.bindMultiplayerSystem()
             this.multiplayerSystem.init()
+        }
+    }
+
+    public bindMultiplayerSystem() {
+        // Connected
+        this.multiplayerSystem.setHandler(SERVER_EVENT.CONNECTED, (message) => {
+            if (message[1] === 0) {
+                console.log("P1")
+                this.isPlayer1 = true
+            } else {
+                console.log("P2")
+                this.isPlayer1 = false
+            }
+        })
+
+        // Opponent disconnected
+        this.multiplayerSystem.setHandler(SERVER_EVENT.OP_DISCONNECT, (message) => {
+            this.isPlayer1 = true
+        })
+
+        // Countdown start
+        this.multiplayerSystem.setHandler(SERVER_EVENT.COUNTDOWN_START, (message) => {
+            setTextContent(this.renderer, this.nameDisplayEntities[1], "Opponent")
+            setTextAlignment(this.nameDisplayEntities[1], this.renderer.gl.canvas.width, ALIGNMENT.RIGHT)
+
+            this.commenceGameCountdown()
+        })
+    }
+
+    public closeMultiplayer() {
+        if (this.multiplayerSystem.isInitialized) {
+            this.multiplayerSystem.close()
         }
     }
 
@@ -170,6 +220,10 @@ class WorldSystem {
         }, 2000)
 
         // Timer count: 0
+        if (this.isMultiplayer) {
+            return
+        }
+
         createDelayedCallback(() => {
             // Create the ball
             const ballXMin = 3 * this.renderer.gl.canvas.width / 8
@@ -239,23 +293,19 @@ class WorldSystem {
 
                 // Ball collides with a wall
                 if (registry.walls.has(collision.entityOther)) {
-                    if (this.isMultiplayer) {
-                        const ball_motion = registry.motions.get(this.ball)
-                        const wall_motion = registry.motions.get(collision.entityOther)
+                    const ballMotion = registry.motions.get(this.ball)
+                    const otherMotion = registry.motions.get(collision.entityOther)
 
+                    if (this.isMultiplayer) {
                         this.multiplayerSystem.sendMessage(new CollisionMessage(
-                            ball_motion.position,
-                            ball_motion.positionalVel,
-                            wall_motion.position,
-                            wall_motion.scale,
-                            1000
+                            ballMotion.position,
+                            ballMotion.positionalVel,
+                            otherMotion.position,
+                            otherMotion.scale,
+                            2
                         ))
-                        
-                        break
                     }
 
-                    let ballMotion = registry.motions.get(this.ball)
-                    let otherMotion = registry.motions.get(collision.entityOther)
 
                     PhysicSystem.reflectObject(ballMotion, otherMotion)
                 }

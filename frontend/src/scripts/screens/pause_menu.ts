@@ -94,6 +94,7 @@ class PauseMenu extends BaseScreen {
                     world.currentScreen = GAME_SCREEN.MAIN_MENU
                     world.resetScore()
                     world.reinitializeWorld()
+                    world.closeMultiplayer()
                     this.cleanup()
                 },
                 onMouseEnter: (e) => {
