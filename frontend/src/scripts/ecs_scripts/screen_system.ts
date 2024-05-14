@@ -7,6 +7,7 @@ import { registry } from "./ecs_registry"
 import { BoundingBox } from "./common"
 import PauseMenu from "../screens/pause_menu"
 import PreGameScreen from "../screens/pre_game_screen"
+import PostGameScreen from "../screens/post_game_screen"
 
 type ScreenMap = Map<GAME_SCREEN, BaseScreen>
 
@@ -34,6 +35,8 @@ class ScreenSystem {
             GAME_SCREEN.PAUSE_MENU, new PauseMenu(this.screenEntities, this.buttonToCallbacksMap, this.keyToCallback))
         this.gameScreenToRender.set(
             GAME_SCREEN.PRE_GAME_SCREEN, new PreGameScreen(this.screenEntities, this.buttonToCallbacksMap, this.keyToCallback))
+        this.gameScreenToRender.set(
+            GAME_SCREEN.POST_GAME_SCREEN, new PostGameScreen(this.screenEntities, this.buttonToCallbacksMap, this.keyToCallback))
     }
 
     public checkMouseOverUI(e: MouseEvent) {

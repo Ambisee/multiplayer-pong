@@ -64,3 +64,4 @@ class MultiplayerSystem {
 }
 
 export default MultiplayerSystem
+export type { HandlerCallback }
