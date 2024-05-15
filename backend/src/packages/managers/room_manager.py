@@ -4,7 +4,6 @@ from asyncio import Queue
 from websockets import WebSocketServerProtocol
 
 from ..objects.room import Room
-from ..objects.player import Player
 
 
 class RoomManager:
@@ -21,12 +20,9 @@ class RoomManager:
             room = await self.room_queue.get()
             
             if not room.is_room_empty():
-                break
+                return room
             
-        if room is None:
-            return await self.create_new_room()
-
-        return room
+        return await self.create_new_room()
 
     async def create_new_room(self):
         # Create a new room
@@ -40,11 +36,8 @@ class RoomManager:
         # Get a room from the queue
         room = await self.get_queue_room(ws)
 
-        # Assign the as player 1 or player 2
-        if room.p1 is None:
-            room.p1 = Player(ws_connection=ws)
-        else:
-            room.p2 = Player(ws_connection=ws)
+        # Add the player into the room
+        room.add_player(ws)
 
         # Map the client id to the room
         self.client_room_map[ws.id] = room
@@ -56,7 +49,7 @@ class RoomManager:
         if room is None:
             return False
     
-        # Place the room back into the queue if it has two players
+        # Place the room back into the queue if it originally has two players
         if room.has_two_players():
             await self.room_queue.put(room)
 

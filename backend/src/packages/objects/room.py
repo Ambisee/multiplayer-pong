@@ -1,7 +1,8 @@
+import asyncio
 from uuid import UUID
 from enum import Enum
 
-import websockets
+from websockets import WebSocketServerProtocol
 
 from .player import Player
 from ..types import Vec2
@@ -38,11 +39,11 @@ class Room:
     def has_two_players(self):
         return self.p1 is not None and self.p2 is not None
 
-    def add_player(self, ):
+    def add_player(self, ws: WebSocketServerProtocol):
         if self.p1 is None:
-            self.p1 = None
+            self.p1 = Player(ws_connection=ws)
         elif self.p2 is None:
-            self.p2 = None
+            self.p2 = Player(ws_connection=ws)
 
     def remove_player(self, ws_id: UUID):
         # elif self.p1 is not None and self.p1.ws_connection.id == ws_id:
@@ -57,10 +58,12 @@ class Room:
     async def broadcast(self, message: bytes):
         targets = []
 
+        # Create an asynchronous task for sending the message to each player
         if self.p1 is not None:
-            targets.append(self.p1.ws_connection)
+            targets.append(asyncio.create_task(self.p1.ws_connection.send(message)))
 
         if self.p2 is not None:
-            targets.append(self.p2.ws_connection)
+            targets.append(asyncio.create_task(self.p2.ws_connection.send(message)))
 
-        websockets.broadcast(targets, message)
+        # Wait until all messages have been sent
+        await asyncio.wait(targets)
