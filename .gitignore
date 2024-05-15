@@ -1,5 +1,6 @@
 **/.vscode
 **/*.code-workspace
+**/.env
 
 # Frontend
 frontend/node_modules
@@ -9,3 +10,5 @@ frontend/**/*.py
 
 # Backend
 backend/**/__pycache__
+backend/**/virtualenv
+backend/**/.venv
