@@ -15,7 +15,7 @@ class CollisionMessage extends BaseMessage {
         ballVelocity: vec2,
         wallPosition: vec2,
         wallScale: vec2,
-        tag: number
+        tag?: number
     ) {
         super()
         this.ballPosition = ballPosition
@@ -26,7 +26,7 @@ class CollisionMessage extends BaseMessage {
     }
 
     public toMessage(): Uint8Array {
-        return new Uint8Array([
+        const payloadArray = [
             // code
             CLIENT_EVENT.COLLISION,
 
@@ -45,10 +45,13 @@ class CollisionMessage extends BaseMessage {
             // wall_scale
             ...shortToArray(this.wallScale[0]),
             ...shortToArray(this.wallScale[1]),
+        ]
 
-            // tags
-            ...shortToArray(this.tag)
-        ])
+        if (this.tag !== undefined) {
+            payloadArray.push(...shortToArray(this.tag))
+        }
+        
+        return new Uint8Array(payloadArray)
     }
 }
 

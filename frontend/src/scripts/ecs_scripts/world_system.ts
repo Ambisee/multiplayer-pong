@@ -205,7 +205,8 @@ class WorldSystem {
             if (message.length != 9) {
                 throw Error("Expected a message length of 9.")
             }
-            
+
+            // Get the ball position and velocities
             const ballPos= vec2.fromValues(
                 arrayToShort(message, 1), arrayToShort(message, 3))
             const ballVel= vec2.fromValues(
@@ -218,6 +219,12 @@ class WorldSystem {
 
             this.ball = createBall(ballPos, vec2.fromValues(50, 50), vec4.fromValues(1, 1, 1, 1))
             registry.motions.get(this.ball).positionalVel = ballVel
+
+            // Display a "start" at the center for 1 second
+            setTextContent(this.renderer, this.timerTextEntity, "Start")
+            createDelayedCallback(() => {
+                registry.removeAllComponentsOf(this.timerTextEntity)
+            }, 1000)
         })
 
         // Collision motion
@@ -240,15 +247,11 @@ class WorldSystem {
         // Opponent Motion
         this.multiplayerSystem.setHandler(SERVER_EVENT.OP_MOTION, (message) => {
             const opMotion = registry.motions.get(this.opponent)
-            if (arrayToShort(message, 3) === opMotion.positionalVel[1]) {
-                return
-            }
+            // if (arrayToShort(message, 3) === opMotion.positionalVel[1]) {
+            //     return
+            // }
 
             vec2.set(opMotion.positionalVel, arrayToShort(message, 1), arrayToShort(message, 3))
-        })
-
-        this.multiplayerSystem.setHandler(SERVER_EVENT.COLLISION_MOTION, (message) => {
-            
         })
     }
 
@@ -336,6 +339,7 @@ class WorldSystem {
                         )
                         
                         if (!this.isPlayer1) {
+                            message.wallPosition[0] = this.renderer.gl.canvas.width - message.wallPosition[0]
                             message.ballPosition[0] = this.renderer.gl.canvas.width - message.ballPosition[0]
                             message.ballVelocity[0] *= -1
                         }
@@ -366,8 +370,7 @@ class WorldSystem {
                             vec2.clone(ballMotion.position),
                             vec2.clone(ballMotion.positionalVel),
                             vec2.clone(otherMotion.position),
-                            vec2.clone(otherMotion.scale),
-                            2
+                            vec2.clone(otherMotion.scale)
                         )
                         
                         if (!this.isPlayer1) {
