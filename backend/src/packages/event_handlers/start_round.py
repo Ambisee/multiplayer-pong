@@ -16,23 +16,27 @@ def create_start_round_message(position: bytes, velocity: bytes):
 
 async def start_round(ws: WebSocketServerProtocol):
     # Create a random ball position and velocity
-    w_width = 1280
-    w_height = 720
+    # Screen and dimensions when two browser tabs are open with equal widths and full height, and zoom in the browsers to 67%
+    w_width = 959
+    w_height = 851
 
-    ball_pos = array_to_bytes([
-        random.randrange(0.25 * w_width, 0.75 * w_width),
-        random.randrange(PhysicSystem.BALL_RADIUS, w_height - PhysicSystem.BALL_RADIUS),
-    ])
+    # ball_pos = array_to_bytes([
+    #     random.randrange(0.25 * w_width, 0.75 * w_width),
+    #     random.randrange(PhysicSystem.BALL_RADIUS, w_height - PhysicSystem.BALL_RADIUS),
+    # ])
 
-    ball_vel = array_to_bytes([
-        (-1)**round(random.random()) * 5,
-        (-1)**round(random.random()) * 5
-    ])
+    # ball_vel = array_to_bytes([
+    #     (-1)**round(random.random()) * 5,
+    #     (-1)**round(random.random()) * 5
+    # ])
 
-    # Generate a random position and velocity to spawn the ball
+    # # Generate a random position and velocity to spawn the ball
+    # ball_pos = array_to_bytes([w_width // 2, w_height // 2])
+    # ball_vel = array_to_bytes([1, 1])
+
     ball_pos = array_to_bytes([w_width // 2, w_height // 2])
-    ball_vel = array_to_bytes([1, 1])
-    
+    ball_vel = array_to_bytes([-5, 5])
+
     # Create the message
     payload = create_start_round_message(ball_pos, ball_vel)
     room = room_manager.client_room_map[ws.id]

@@ -80,6 +80,14 @@ function switchToGameWindow() {
 }
 
 async function main() {
+    // Using parcel to access environment variables
+    if (process.env.ENV === "dev") {
+        switchToGameWindow()
+        siteState.isStarted = true
+        initializeGame()
+        return
+    }
+
     if (window.innerWidth >= 1280 && window.innerHeight >= 720) {
         switchToGameWindow()
         siteState.isStarted = true
