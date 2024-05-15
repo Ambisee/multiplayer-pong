@@ -5,6 +5,7 @@ import websockets
 
 from .start_round import start_round
 from ..managers.room_manager import room_manager
+from ..types.payloads import CountdownStartPayload
 from ..types import SERVER_EVENT
 
 
@@ -18,8 +19,9 @@ def create_connected_message(is_player1: bool):
     return code + payload
 
 
-def create_countdown_start_message():
-    return SERVER_EVENT.COUNTDOWN_START.value.to_bytes(1, "little")
+async def initialize_game(ws: websockets.WebSocketServerProtocol):
+    await asyncio.sleep(3)
+    await start_round(ws)
 
 
 async def new_connection_message(ws: websockets.WebSocketServerProtocol, message: bytes):
@@ -39,8 +41,6 @@ async def new_connection_message(ws: websockets.WebSocketServerProtocol, message
 
     # Start the game timer if the room is ready
     if room.has_two_players():
-        payload = create_countdown_start_message()
-        await room.broadcast(payload)
+        await room.broadcast(CountdownStartPayload().to_bytes())
 
-        await asyncio.sleep(3)
-        await start_round(ws)
+        return asyncio.create_task(initialize_game(ws))
