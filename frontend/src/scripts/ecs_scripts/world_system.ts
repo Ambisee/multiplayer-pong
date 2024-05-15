@@ -56,6 +56,11 @@ class WorldSystem {
     }
 
     public step(elapsedTimeMs: number) {
+        // Multiplayer mode features
+        if (this.isMultiplayer) {
+
+        }
+        
         // Decrement the time on the delayed callbacks and call them if time runs out
         for (let i = 0; i < registry.delayedCallbacks.length(); i++) {
             const delayedCallback = registry.delayedCallbacks.components[i]
@@ -247,16 +252,23 @@ class WorldSystem {
         // Opponent Motion
         this.multiplayerSystem.setHandler(SERVER_EVENT.OP_MOTION, (message) => {
             const opMotion = registry.motions.get(this.opponent)
-            // if (arrayToShort(message, 3) === opMotion.positionalVel[1]) {
-            //     return
-            // }
 
-            vec2.set(opMotion.positionalVel, arrayToShort(message, 1), arrayToShort(message, 3))
+            opMotion.position[1] = arrayToShort(message, 3)
         })
     }
 
     public setMultiplayerHandler(serverEvent: SERVER_EVENT, handlerCallback: HandlerCallback) {
         this.multiplayerSystem.setHandler(serverEvent, handlerCallback)
+    }
+
+    public pushMultiplayerMessages(timeElapsed: number) {
+        if (!this.isMultiplayer) return
+        if (!this.multiplayerSystem.isInitialized) return
+        
+        // We will broadcast our player's location at every iteration of the game loop
+        // We could minimize the number of messages we sent further but this will do for now
+        const pMotion = registry.motions.get(this.player)
+        this.multiplayerSystem.sendMessage(new MotionMessage(pMotion.position))
     }
 
     public closeMultiplayer() {
@@ -416,10 +428,6 @@ class WorldSystem {
         const pMotion = registry.motions.get(this.player)
         if (pMotion.positionalVel[1] != 0) {
             pMotion.positionalVel[1] = 0
-
-            if (this.isMultiplayer) {
-                this.multiplayerSystem.sendMessage(new MotionMessage(vec2.fromValues(0, 0)))
-            }
         }
     }
 
@@ -442,20 +450,12 @@ class WorldSystem {
                 break
             case "w":
                 if (!this.isPaused) {
-                    if (this.isMultiplayer) {
-                        this.multiplayerSystem.sendMessage(new MotionMessage(vec2.fromValues(0, -5)))
-                    }
-
                     pMotion.positionalVel[1] = -5
                 }
                 
                 break
             case "s":
                 if (!this.isPaused) {
-                    if (this.isMultiplayer) {
-                        this.multiplayerSystem.sendMessage(new MotionMessage(vec2.fromValues(0, 5)))
-                    }
-
                     pMotion.positionalVel[1] = 5
                 }
                 break

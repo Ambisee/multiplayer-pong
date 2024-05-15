@@ -42,6 +42,7 @@ function loop(
     if (!world.isPaused) {
         physics.step(timeElapsed)
         world.handleCollision(timeElapsed)
+        world.pushMultiplayerMessages(timeElapsed)
     }
 
     const newPreviousTime = Date.now()

@@ -82,7 +82,7 @@ class CollisionMotionPayload(OutgoingPayload):
 
 @dataclass
 class MotionPayload(IncomingPayload):
-    velocity: Vec2
+    position: Vec2
 
     @staticmethod
     def from_bytes(payload):
@@ -97,11 +97,11 @@ class MotionPayload(IncomingPayload):
 
 @dataclass
 class OpponentMotionPayload(OutgoingPayload):
-    velocity: Vec2
+    position: Vec2
 
     def to_bytes(self):
-        vel_x = self.velocity[0].to_bytes(2, byteorder='little', signed=True)
-        vel_y = self.velocity[1].to_bytes(2, byteorder='little', signed=True)
+        vel_x = self.position[0].to_bytes(2, byteorder='little', signed=True)
+        vel_y = self.position[1].to_bytes(2, byteorder='little', signed=True)
 
         return SERVER_EVENT.OP_MOTION.value.to_bytes() + vel_x + vel_y
 

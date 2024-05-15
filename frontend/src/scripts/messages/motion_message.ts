@@ -4,16 +4,16 @@ import { CLIENT_EVENT } from "./message_enum"
 import { shortToArray } from "../helper_scripts/messaging_helpers"
 
 class MotionMessage extends BaseMessage {
-    private velocity: vec2
+    private position: vec2
 
-    public constructor(velocity: vec2) {
+    public constructor(position: vec2) {
         super()
-        this.velocity = velocity
+        this.position = position
     }
 
     public toMessage(): Uint8Array {
-        const x = this.velocity[0]
-        const y = this.velocity[1]
+        const x = this.position[0]
+        const y = this.position[1]
 
         return new Uint8Array([
             // code
