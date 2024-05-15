@@ -1,4 +1,6 @@
-from websockets import WebSocketServerProtocol
+import logging
+
+from websockets import WebSocketServerProtocol, ConnectionClosedError
 
 from ..types import SERVER_EVENT
 from ..managers import room_manager
@@ -14,4 +16,8 @@ async def lost_connection(ws: WebSocketServerProtocol):
     # Notify the other player in the room that
     # the opponent has disconnected
     if not room.is_room_empty():
-        await room.p1.ws_connection.send(SERVER_EVENT.OP_DISCONNECT.value.to_bytes())
+        try:
+            await room.p1.ws_connection.send(SERVER_EVENT.OP_DISCONNECT.value.to_bytes())
+        except ConnectionClosedError:
+            room.p1 = None
+            logging.error("Unable to send message to player 1")

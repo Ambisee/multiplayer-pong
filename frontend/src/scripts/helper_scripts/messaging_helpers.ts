@@ -17,7 +17,7 @@ function arrayToShort(array: Uint8Array, i: number): number {
     if (value & 0x8000) {
         // If it's a negative number, invert the bits, get the first 2 bytes from the right
         // and add one to the value
-        value = -((~value & 0x0000ffff) + 1)
+        value = -((~value + 1) & 0x0000ffff)
     }
     
     return value
@@ -39,7 +39,7 @@ function shortToArray(value: number) {
         throw Error("Value is out of bound. Please enter a value between -32768 and 32767.")
     }
 
-    return [value & 0xFF, value & 0xFF00]
+    return [value & 0xFF, (value >> 8) & 0xFF]
 }
 
 export { arrayToShort, shortToArray }

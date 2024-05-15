@@ -22,9 +22,12 @@ def handle_message_loop(func):
 @handle_message_loop
 async def handle_connection(ws: websockets.WebSocketServerProtocol):
     data = await ws.recv()
-    
-    handle_func = handlers.get(int.from_bytes(data))
+
+    handle_func = handlers.get(data[0])
     if handle_func is None:
         return
 
-    await handle_func(ws)
+    try:
+        await handle_func(ws, data)
+    except Exception as e:
+        logging.error(e)

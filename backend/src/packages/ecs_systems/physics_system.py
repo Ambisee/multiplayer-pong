@@ -4,7 +4,7 @@ from ..types.payloads import CollisionMotionPayload
 
 
 class PhysicSystem:
-    BALL_RADIUS = 50
+    BALL_RADIUS = 25
 
     def __init__(self):
         pass
@@ -16,10 +16,10 @@ class PhysicSystem:
         w_pos,
         w_scale
     ):
-        w_top = w_pos[1] - w_scale[1] / 2
-        w_bottom = w_pos[1] + w_scale[1] / 2
-        w_right = w_pos[0] + w_scale[0] / 2
-        w_left = w_pos[0] - w_scale[0] / 2
+        w_top = w_pos[1] - w_scale[1] // 2
+        w_bottom = w_pos[1] + w_scale[1] // 2
+        w_right = w_pos[0] + w_scale[0] // 2
+        w_left = w_pos[0] - w_scale[0] // 2
 
         incoming_angle = atan2(w_pos[1] - b_pos[1], w_pos[0] - b_pos[0])
 
@@ -34,15 +34,15 @@ class PhysicSystem:
             result = CollisionMotionPayload([b_vel[0], -b_vel[1]], [b_pos[0], b_pos[1]])
 
             if w_pos[1] - b_pos[1] >= 0:
-                result.b_pos[1] = w_top - PhysicSystem.BALL_RADIUS
+                result.ball_pos[1] = w_top - PhysicSystem.BALL_RADIUS
             else:
-                result.b_pos[1] = w_bottom + PhysicSystem.BALL_RADIUS
+                result.ball_pos[1] = w_bottom + PhysicSystem.BALL_RADIUS
         else:
             result = CollisionMotionPayload([-b_vel[0], b_vel[1]], [b_pos[0], b_pos[1]])
 
             if w_pos[0] - b_pos[0] >= 0:
-                result.b_pos[0] = w_left - PhysicSystem.BALL_RADIUS
+                result.ball_pos[0] = w_left - PhysicSystem.BALL_RADIUS
             else:
-                result.b_pos[0] = w_right + PhysicSystem.BALL_RADIUS
+                result.ball_pos[0] = w_right + PhysicSystem.BALL_RADIUS
 
         return result

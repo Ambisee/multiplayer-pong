@@ -33,14 +33,14 @@ async def collision(ws: WebSocketServerProtocol, message: bytes):
     p2_payload = CollisionPayload.from_bytes(room.collision_payloads[1])
 
     # Calculate the result of the collision
-    if p1_payload.ball_vel[0] < 0 and p2_payload.ball_vel[0] > 0:
+    if p1_payload.ball_vel[0] < 0 and p2_payload.ball_vel[0] < 0:
         result = PhysicSystem.reflect_object(
             p1_payload.ball_pos,
             p1_payload.ball_vel,
             p1_payload.wall_pos,
             p1_payload.wall_scale,
         )
-    elif p1_payload.ball_vel[0] > 0 and p2_payload.ball_vel[0] < 0:
+    elif p1_payload.ball_vel[0] > 0 and p2_payload.ball_vel[0] > 0:
         result = PhysicSystem.reflect_object(
             p2_payload.ball_pos,
             p2_payload.ball_vel,

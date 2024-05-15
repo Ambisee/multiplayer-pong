@@ -1,4 +1,4 @@
-import time
+import asyncio
 import logging
 
 import websockets
@@ -22,7 +22,7 @@ def create_countdown_start_message():
     return SERVER_EVENT.COUNTDOWN_START.value.to_bytes(1, "little")
 
 
-async def new_connection_message(ws: websockets.WebSocketServerProtocol):
+async def new_connection_message(ws: websockets.WebSocketServerProtocol, message: bytes):
     # Log the new client's ID
     logging.info(f"APP: Client {ws.id} connected.")
 
@@ -42,5 +42,5 @@ async def new_connection_message(ws: websockets.WebSocketServerProtocol):
         payload = create_countdown_start_message()
         await room.broadcast(payload)
 
-        time.sleep(3)
+        await asyncio.sleep(3)
         await start_round(ws)

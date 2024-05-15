@@ -15,6 +15,7 @@ import { createBall, createDelayedCallback, createRectangle, createScreenBoundar
 import CollisionMessage from "../messages/collision_message"
 import { SERVER_EVENT } from "../messages/message_enum"
 import { arrayToShort } from "../helper_scripts/messaging_helpers"
+import MotionMessage from "../messages/motion_message"
 
 class WorldSystem {
     private renderer: RenderSystem
@@ -67,7 +68,6 @@ class WorldSystem {
                 registry.removeAllComponentsOf(registry.delayedCallbacks.entities[i])
             }
         }
-        
     }
 
     public resetScore() {
@@ -205,20 +205,46 @@ class WorldSystem {
             if (message.length != 9) {
                 throw Error("Expected a message length of 9.")
             }
-
-
-            const ball_pos = vec2.fromValues(
+            
+            const ballPos= vec2.fromValues(
                 arrayToShort(message, 1), arrayToShort(message, 3))
-            const ball_vel = vec2.fromValues(
+            const ballVel= vec2.fromValues(
                 arrayToShort(message, 5), arrayToShort(message, 7))
 
             if (!this.isPlayer1) {
-                ball_pos[0] = this.renderer.gl.canvas.width - ball_pos[0]
-                ball_vel[0] *= -1
+                ballPos[0] = this.renderer.gl.canvas.width - ballPos[0]
+                ballVel[0] *= -1
             }
 
-            this.ball = createBall(ball_pos, vec2.fromValues(50, 50), vec4.fromValues(1, 1, 1, 1))
-            registry.motions.get(this.ball).positionalVel = ball_vel
+            this.ball = createBall(ballPos, vec2.fromValues(50, 50), vec4.fromValues(1, 1, 1, 1))
+            registry.motions.get(this.ball).positionalVel = ballVel
+        })
+
+        // Collision motion
+        this.multiplayerSystem.setHandler(SERVER_EVENT.COLLISION_MOTION, (message) => {
+            const ballPos = vec2.fromValues(
+                arrayToShort(message, 1), arrayToShort(message, 3))
+            const ballVel = vec2.fromValues(
+                arrayToShort(message, 5), arrayToShort(message, 7))
+            const ballMotion = registry.motions.get(this.ball)
+
+            if (!this.isPlayer1) {
+                ballPos[0] = this.renderer.gl.canvas.width - ballPos[0]
+                ballVel[0] *= -1
+            }
+
+            vec2.copy(ballMotion.position, ballPos)
+            vec2.copy(ballMotion.positionalVel, ballVel)
+        })
+
+        // Opponent Motion
+        this.multiplayerSystem.setHandler(SERVER_EVENT.OP_MOTION, (message) => {
+            const opMotion = registry.motions.get(this.opponent)
+            if (arrayToShort(message, 3) === opMotion.positionalVel[1]) {
+                return
+            }
+
+            vec2.set(opMotion.positionalVel, arrayToShort(message, 1), arrayToShort(message, 3))
         })
 
         this.multiplayerSystem.setHandler(SERVER_EVENT.COLLISION_MOTION, (message) => {
@@ -298,25 +324,25 @@ class WorldSystem {
 
                     // If player is in multiplayer, send the collision event to the server
                     if (this.isMultiplayer) {
-                        const ball_motion = registry.motions.get(this.ball)
-                        const wall_motion = registry.motions.get(collision.entityOther)
+                        const ballMotion = registry.motions.get(this.ball)
+                        const wallMotion = registry.motions.get(collision.entityOther)
 
                         const message = new CollisionMessage(
-                            ball_motion.position,
-                            ball_motion.positionalVel,
-                            wall_motion.position,
-                            wall_motion.scale,
+                            vec2.clone(ballMotion.position),
+                            vec2.clone(ballMotion.positionalVel),
+                            vec2.clone(wallMotion.position),
+                            vec2.clone(wallMotion.scale),
                             endGameWall.isLeft ? 0 : 1
                         )
                         
                         if (!this.isPlayer1) {
-                            message.ball_position[0] = this.renderer.gl.canvas.width - message.ball_position[0]
-                            message.ball_velocity[0] *= -1
+                            message.ballPosition[0] = this.renderer.gl.canvas.width - message.ballPosition[0]
+                            message.ballVelocity[0] *= -1
                         }
 
                         this.multiplayerSystem.sendMessage(message)
 
-                        break
+                        continue
                     }
 
                     if (endGameWall.isLeft) {
@@ -336,13 +362,21 @@ class WorldSystem {
                     const otherMotion = registry.motions.get(collision.entityOther)
 
                     if (this.isMultiplayer) {
-                        this.multiplayerSystem.sendMessage(new CollisionMessage(
-                            ballMotion.position,
-                            ballMotion.positionalVel,
-                            otherMotion.position,
-                            otherMotion.scale,
+                        const message = new CollisionMessage(
+                            vec2.clone(ballMotion.position),
+                            vec2.clone(ballMotion.positionalVel),
+                            vec2.clone(otherMotion.position),
+                            vec2.clone(otherMotion.scale),
                             2
-                        ))
+                        )
+                        
+                        if (!this.isPlayer1) {
+                            message.wallPosition[0] = this.renderer.gl.canvas.width - message.wallPosition[0]
+                            message.ballPosition[0] = this.renderer.gl.canvas.width - message.ballPosition[0]
+                            message.ballVelocity[0] *= -1
+                        }
+
+                        this.multiplayerSystem.sendMessage(message)
                     }
 
 
@@ -351,17 +385,17 @@ class WorldSystem {
             }
 
             // Paddle collision
-            if (collision.entity === this.player) {
+            if (collision.entity === this.player || collision.entity === this.opponent) {
                 if (registry.walls.has(collision.entityOther)) {
-                    const p_motion = registry.motions.get(this.player)
-                    const w_motion = registry.motions.get(collision.entityOther)
+                    const pMotion = registry.motions.get(collision.entity)
+                    const wMotion = registry.motions.get(collision.entityOther)
 
-                    const w_bb = BoundingBox.getBoundingBox(w_motion.position, w_motion.scale)
+                    const wBB = BoundingBox.getBoundingBox(wMotion.position, wMotion.scale)
 
-                    if (p_motion.positionalVel[1] > 0) {
-                        p_motion.position[1] = w_bb.top - p_motion.scale[1] / 2
-                    } else if (p_motion.positionalVel[1] < 0) {
-                        p_motion.position[1] = w_bb.bottom + p_motion.scale[1] / 2
+                    if (pMotion.positionalVel[1] > 0) {
+                        pMotion.position[1] = wBB.top - pMotion.scale[1] / 2
+                    } else if (pMotion.positionalVel[1] < 0) {
+                        pMotion.position[1] = wBB.bottom + pMotion.scale[1] / 2
                     }
                 }
             }
@@ -376,9 +410,13 @@ class WorldSystem {
         if (!registry.motions.has(this.player)) return
 
 
-        const p_motion = registry.motions.get(this.player)
-        if (p_motion.positionalVel[1] != 0) {
-            p_motion.positionalVel[1] = 0
+        const pMotion = registry.motions.get(this.player)
+        if (pMotion.positionalVel[1] != 0) {
+            pMotion.positionalVel[1] = 0
+
+            if (this.isMultiplayer) {
+                this.multiplayerSystem.sendMessage(new MotionMessage(vec2.fromValues(0, 0)))
+            }
         }
     }
 
@@ -388,7 +426,7 @@ class WorldSystem {
             return
         }
         
-        const p_motion = registry.motions.get(this.player)
+        const pMotion = registry.motions.get(this.player)
 
         switch (e.key) {
             case "Escape":
@@ -400,10 +438,23 @@ class WorldSystem {
                 this.reinitializeWorld()
                 break
             case "w":
-                if (!this.isPaused) p_motion.positionalVel[1] = -5
+                if (!this.isPaused) {
+                    if (this.isMultiplayer) {
+                        this.multiplayerSystem.sendMessage(new MotionMessage(vec2.fromValues(0, -5)))
+                    }
+
+                    pMotion.positionalVel[1] = -5
+                }
+                
                 break
             case "s":
-                if (!this.isPaused) p_motion.positionalVel[1] = 5
+                if (!this.isPaused) {
+                    if (this.isMultiplayer) {
+                        this.multiplayerSystem.sendMessage(new MotionMessage(vec2.fromValues(0, 5)))
+                    }
+
+                    pMotion.positionalVel[1] = 5
+                }
                 break
             default:
                 break

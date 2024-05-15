@@ -49,7 +49,7 @@ class CollisionPayload(IncomingPayload):
         )
 
         if len(payload) > 17:
-            tag = int.from_bytes(payload[17])
+            tag = int.from_bytes(payload[17:])
 
         result.tag = tag
         return result
@@ -67,3 +67,29 @@ class CollisionMotionPayload(OutgoingPayload):
         b_vely = self.ball_vel[1].to_bytes(2, byteorder="little", signed=True)
 
         return SERVER_EVENT.COLLISION_MOTION.value.to_bytes() + b_posx + b_posy + b_velx + b_vely
+
+
+@dataclass
+class MotionPayload(IncomingPayload):
+    velocity: Vec2
+
+    @staticmethod
+    def from_bytes(payload):
+        if len(payload) != 5:
+            raise Exception("Expected payload size of 5 bytes.")
+
+        return MotionPayload([
+            int.from_bytes(payload[1:3], byteorder="little", signed=True),
+            int.from_bytes(payload[3:5], byteorder="little", signed=True)
+        ])
+
+
+@dataclass
+class OpponentMotionPayload(OutgoingPayload):
+    velocity: Vec2
+
+    def to_bytes(self):
+        vel_x = self.velocity[0].to_bytes(2, byteorder='little', signed=True)
+        vel_y = self.velocity[1].to_bytes(2, byteorder='little', signed=True)
+
+        return SERVER_EVENT.OP_MOTION.value.to_bytes() + vel_x + vel_y
