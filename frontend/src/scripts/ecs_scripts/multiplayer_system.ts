@@ -48,9 +48,9 @@ class MultiplayerSystem {
 
         this.websocket.addEventListener("open", (e) => {
             this.websocket.send((new ConnectMessage()).toMessage())
-        })
+            this.isInitialized = true
 
-        this.isInitialized = true
+        })
     }
 
     public close() {

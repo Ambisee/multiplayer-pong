@@ -206,13 +206,23 @@ class WorldSystem {
                 throw Error("Expected a message length of 9.")
             }
 
+
             const ball_pos = vec2.fromValues(
                 arrayToShort(message, 1), arrayToShort(message, 3))
             const ball_vel = vec2.fromValues(
                 arrayToShort(message, 5), arrayToShort(message, 7))
 
+            if (!this.isPlayer1) {
+                ball_pos[0] = this.renderer.gl.canvas.width - ball_pos[0]
+                ball_vel[0] *= -1
+            }
+
             this.ball = createBall(ball_pos, vec2.fromValues(50, 50), vec4.fromValues(1, 1, 1, 1))
             registry.motions.get(this.ball).positionalVel = ball_vel
+        })
+
+        this.multiplayerSystem.setHandler(SERVER_EVENT.COLLISION_MOTION, (message) => {
+            
         })
     }
 

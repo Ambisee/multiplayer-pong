@@ -80,10 +80,12 @@ function switchToGameWindow() {
 }
 
 async function main() {
-    switchToGameWindow()
-    siteState.isStarted = true
-    initializeGame()
-    return
+    if (process.env.ENV === "dev") {
+        switchToGameWindow()
+        siteState.isStarted = true
+        initializeGame()
+        return
+    }
     
     if (window.innerWidth >= 1280 && window.innerHeight >= 720) {
         switchToGameWindow()

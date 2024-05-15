@@ -7,12 +7,10 @@ from ..managers import room_manager
 from ..helpers import array_to_bytes
 
 
-def create_start_round_message(position, velocity):
+def create_start_round_message(position: bytes, velocity: bytes):
     b_event = SERVER_EVENT.ROUND_START.value.to_bytes(1, "little")
-    b_position = array_to_bytes(position)
-    b_velocity = array_to_bytes(velocity)
-
-    return b_event + b_position + b_velocity
+    
+    return b_event + position + velocity
 
 
 async def start_round(ws: WebSocketServerProtocol):

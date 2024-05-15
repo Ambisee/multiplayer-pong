@@ -1,7 +1,9 @@
+import time
 import logging
 
 import websockets
 
+from .start_round import start_round
 from ..managers.room_manager import room_manager
 from ..types import SERVER_EVENT
 
@@ -39,3 +41,6 @@ async def new_connection_message(ws: websockets.WebSocketServerProtocol):
     if room.has_two_players():
         payload = create_countdown_start_message()
         await room.broadcast(payload)
+
+        time.sleep(3)
+        await start_round(ws)
