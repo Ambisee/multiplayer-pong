@@ -1,5 +1,4 @@
 import asyncio
-import logging
 
 import websockets
 
@@ -24,13 +23,10 @@ async def initialize_game(ws: websockets.WebSocketServerProtocol):
     await start_round(ws)
 
     room = room_manager.client_room_map[ws.id]
-    return f"Room {room}: Finish game initialization"
+    return f"Room {room.room_id}: Finish game initialization"
 
 
-async def new_connection_message(ws: websockets.WebSocketServerProtocol, message: bytes):
-    # Log the new client's ID
-    logging.info(f"APP: Client {ws.id} connected.")
-
+async def new_connection(ws: websockets.WebSocketServerProtocol, message: bytes):
     # Assign the player a room
     room = await room_manager.add_player(ws)
     if room.p1.ws_connection.id == ws.id:

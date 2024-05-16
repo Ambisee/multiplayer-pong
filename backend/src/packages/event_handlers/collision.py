@@ -54,7 +54,7 @@ async def collision(ws: WebSocketServerProtocol, message: bytes):
         )
     else:
         raise ValueError("Payload values doesn't match.")
-    
+
     # Refresh the collision payload statuses
     room.collision_payload_received = [False, False]
     room.collision_payloads = [None, None]

@@ -8,6 +8,12 @@ from ..ecs_systems.physics_system import PhysicSystem
 
 
 async def start_round(ws: WebSocketServerProtocol):
+    # Get the client's room
+    room = room_manager.client_room_map.get(ws.id)
+    if room is None:
+        raise ValueError(f"Client {ws.id} disconnected during round start phase.")
+
+
     # Create a random ball position and velocity
     # Screen and dimensions when two browser tabs are open with equal widths and full height, and zoom in the browsers to 67%
     w_width = 959
@@ -28,7 +34,6 @@ async def start_round(ws: WebSocketServerProtocol):
     ball_vel = [-5, 5]
 
     # Create the message
-    room = room_manager.client_room_map.get(ws.id)
     payload = RoundStartPayload(ball_pos, ball_vel)
 
     # Make sure the collision payloads are properly reset

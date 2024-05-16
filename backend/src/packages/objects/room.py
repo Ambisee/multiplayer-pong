@@ -1,6 +1,6 @@
 import asyncio
 from asyncio import Task
-from uuid import UUID, uuid4
+from uuid import UUID
 from typing import List
 
 from websockets import WebSocketServerProtocol
@@ -9,19 +9,23 @@ from .player import Player
 
 
 class Room:
+    id_count: int = 0
+
     p1: Player | None
     p2: Player | None
     room_id: str
     
-    win_threshold: int = 5
+    win_threshold: int = 2
 
     collision_payloads: list[bytes] = [None, None]
     collision_payload_received: list[bool] = [False, False]
 
     def __init__(self, p1=None, p2=None, ball_pos=(0, 0), ball_vel=(0, 0)):
-        self.room_id = str(uuid4())
+        self.room_id = str(Room.id_count)
         self.p1: Player = p1
         self.p2: Player = p2
+
+        Room.id_count += 1
 
     def is_room_empty(self):
         return self.p1 is None and self.p2 is None
@@ -36,14 +40,18 @@ class Room:
             self.p2 = Player(ws_connection=ws)
 
     def remove_player(self, ws_id: UUID):
-        # elif self.p1 is not None and self.p1.ws_connection.id == ws_id:
-        if self.p1.ws_connection.id == ws_id:
+        if self.p1 is not None and self.p1.ws_connection.id == ws_id:
             self.p1 = self.p2
             self.p2 = None
 
-        # if self.p2 is not None and self.p2.ws_connection.id == ws_id:
         elif self.p2 is not None and self.p2.ws_connection.id == ws_id:
             self.p2 = None
+
+    def reset_score(self):
+        if self.p1 is not None:
+            self.p1.score = 0
+        if self.p2 is not None:
+            self.p2.score = 0
 
     def game_end(self):
         if self.p1.score >= self.win_threshold:

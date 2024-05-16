@@ -9,6 +9,10 @@ from ..objects.room import Room
 async def next_step(room: Room):
     await asyncio.sleep(1.5)
     
+    # During the timeout, a player may have disconnected
+    if not room.has_two_players():
+        return
+
     # A player has won the game
     if room.game_end() != -1:
         await room.broadcast(ResultPayload(room.p1.score, room.p2.score).to_bytes())
