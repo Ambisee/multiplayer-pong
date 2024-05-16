@@ -6,6 +6,7 @@ import { BaseScreen } from "./base_screen"
 import { ButtonBuilder } from "../ecs_scripts/ui_init"
 import { GAME_SCREEN, RENDER_LAYER } from "../ecs_scripts/components"
 import { registry } from "../ecs_scripts/ecs_registry"
+import { RED, WHITE } from "../ecs_scripts/common"
 
 class PauseMenu extends BaseScreen {
     
@@ -67,11 +68,11 @@ class PauseMenu extends BaseScreen {
                     
                     // Change color to red
                     const textRR = registry.renderRequests.get(resumeBtnBuilder.buttonComponent.textEntity)
-                    vec4.copy(textRR.color, this.RED)
+                    vec4.copy(textRR.color, RED)
 
                     resumeBtnBuilder.buttonComponent.associatedEntities.forEach((value) => {
                         const assocRR = registry.renderRequests.get(value)
-                        vec4.copy(assocRR.color, this.RED)
+                        vec4.copy(assocRR.color, RED)
                     })
                 },
                 onMouseExit: (e) => {
@@ -79,11 +80,11 @@ class PauseMenu extends BaseScreen {
 
                     // Change color to white
                     const textRR = registry.renderRequests.get(resumeBtnBuilder.buttonComponent.textEntity)
-                    vec4.copy(textRR.color, this.WHITE)
+                    vec4.copy(textRR.color, WHITE)
 
                     resumeBtnBuilder.buttonComponent.associatedEntities.forEach((value) => {
                         const assocRR = registry.renderRequests.get(value)
-                        vec4.copy(assocRR.color, this.WHITE)
+                        vec4.copy(assocRR.color, WHITE)
                     })
                 },
             },
@@ -102,11 +103,11 @@ class PauseMenu extends BaseScreen {
 
                     // Change color to red
                     const textRR = registry.renderRequests.get(quitBtnBuilder.buttonComponent.textEntity)
-                    vec4.copy(textRR.color, this.RED)
+                    vec4.copy(textRR.color, RED)
 
                     quitBtnBuilder.buttonComponent.associatedEntities.forEach((value) => {
                         const assocRR = registry.renderRequests.get(value)
-                        vec4.copy(assocRR.color, this.RED)
+                        vec4.copy(assocRR.color, RED)
                     })
                 },
                 onMouseExit: (e) => {
@@ -114,11 +115,11 @@ class PauseMenu extends BaseScreen {
 
                     // Change color to white
                     const textRR = registry.renderRequests.get(quitBtnBuilder.buttonComponent.textEntity)
-                    vec4.copy(textRR.color, this.WHITE)
+                    vec4.copy(textRR.color, WHITE)
 
                     quitBtnBuilder.buttonComponent.associatedEntities.forEach((value) => {
                         const assocRR = registry.renderRequests.get(value)
-                        vec4.copy(assocRR.color, this.WHITE)
+                        vec4.copy(assocRR.color, WHITE)
                     })
                 },
             },

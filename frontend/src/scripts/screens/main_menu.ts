@@ -6,6 +6,7 @@ import { registry } from "../ecs_scripts/ecs_registry"
 import { ButtonBuilder } from "../ecs_scripts/ui_init"
 import WorldSystem from "../ecs_scripts/world_system"
 import { GAME_SCREEN } from "../ecs_scripts/components"
+import { BLACK, RED, WHITE } from "../ecs_scripts/common"
 
 class MainMenu extends BaseScreen {
 
@@ -19,7 +20,7 @@ class MainMenu extends BaseScreen {
             renderer, 
             vec2.fromValues(localGL.canvas.width / 2, 0),
             "Neo Pong",
-            this.WHITE,
+            WHITE,
             1.25
         )
 
@@ -31,8 +32,8 @@ class MainMenu extends BaseScreen {
         const mPlayBtnBuilder = new ButtonBuilder(renderer)
 
         // Button colors
-        sPlayBtnBuilder.setColor(vec4.clone(this.WHITE), vec4.clone(this.BLACK))
-        mPlayBtnBuilder.setColor(vec4.clone(this.WHITE), vec4.clone(this.BLACK))
+        sPlayBtnBuilder.setColor(vec4.clone(WHITE), vec4.clone(BLACK))
+        mPlayBtnBuilder.setColor(vec4.clone(WHITE), vec4.clone(BLACK))
         
         // Button size and positions
         const buttonDimension = vec2.fromValues(100, 25)
@@ -67,13 +68,13 @@ class MainMenu extends BaseScreen {
                     world.play(false)
                 },
                 onMouseEnter: (e) => {
-                    vec4.copy(sPlayBtnTextRR.color, this.WHITE)
-                    vec4.copy(sPlayBtnBoxRR.color, this.RED)
+                    vec4.copy(sPlayBtnTextRR.color, WHITE)
+                    vec4.copy(sPlayBtnBoxRR.color, RED)
                     sPlayBtnBuilder.buttonComponent.isMouseHovering = true
                 },
                 onMouseExit: (e) => {
-                    vec4.copy(sPlayBtnBoxRR.color, this.WHITE)
-                    vec4.copy(sPlayBtnTextRR.color, this.BLACK)
+                    vec4.copy(sPlayBtnBoxRR.color, WHITE)
+                    vec4.copy(sPlayBtnTextRR.color, BLACK)
                     sPlayBtnBuilder.buttonComponent.isMouseHovering = false
                 }
             },
@@ -85,13 +86,13 @@ class MainMenu extends BaseScreen {
                     world.play(true)
                 },
                 onMouseEnter: (e) => {
-                    vec4.copy(mPlayBtnTextRR.color, this.WHITE)
-                    vec4.copy(mPlayBtnBoxRR.color, this.RED)
+                    vec4.copy(mPlayBtnTextRR.color, WHITE)
+                    vec4.copy(mPlayBtnBoxRR.color, RED)
                     registry.buttons.get(mPlayBtnBuilder.entity).isMouseHovering = true
                 },
                 onMouseExit: (e) => {
-                    vec4.copy(mPlayBtnBoxRR.color, this.WHITE)
-                    vec4.copy(mPlayBtnTextRR.color, this.BLACK)
+                    vec4.copy(mPlayBtnBoxRR.color, WHITE)
+                    vec4.copy(mPlayBtnTextRR.color, BLACK)
                     registry.buttons.get(mPlayBtnBuilder.entity).isMouseHovering = false
                 }
             }

@@ -1,4 +1,8 @@
-import { mat3, vec2 } from "gl-matrix"
+import { mat3, vec2, vec4 } from "gl-matrix"
+
+const RED = vec4.fromValues(1, 0, 0, 1)
+const WHITE = vec4.fromValues(1, 1, 1, 1)
+const BLACK = vec4.fromValues(0, 0, 0, 1)
 
 class BoundingBox {
     public top: number
@@ -68,6 +72,7 @@ function clamp(value: number, minValue: number, maxValue: number) {
 }
 
 export { 
+    RED, WHITE, BLACK,
     Transform, BoundingBox,
     clamp
 }
