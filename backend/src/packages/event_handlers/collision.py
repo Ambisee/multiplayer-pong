@@ -53,7 +53,7 @@ async def collision(ws: WebSocketServerProtocol, message: bytes):
             p2_payload.wall_scale,
         )
     else:
-        raise Exception("Payload values doesn't match.")
+        raise ValueError("Payload values doesn't match.")
     
     # Refresh the collision payload statuses
     room.collision_payload_received = [False, False]

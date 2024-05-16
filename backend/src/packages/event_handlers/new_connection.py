@@ -23,6 +23,9 @@ async def initialize_game(ws: websockets.WebSocketServerProtocol):
     await asyncio.sleep(3)
     await start_round(ws)
 
+    room = room_manager.client_room_map[ws.id]
+    return f"Room {room}: Finish game initialization"
+
 
 async def new_connection_message(ws: websockets.WebSocketServerProtocol, message: bytes):
     # Log the new client's ID
@@ -42,5 +45,6 @@ async def new_connection_message(ws: websockets.WebSocketServerProtocol, message
     # Start the game timer if the room is ready
     if room.has_two_players():
         await room.broadcast(CountdownStartPayload().to_bytes())
-
         return asyncio.create_task(initialize_game(ws))
+    
+    return None
