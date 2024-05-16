@@ -65,7 +65,9 @@ class MultiplayerSystem {
     
 
     public sendMessage<T extends BaseMessage>(message: T) {
-        this.websocket.send(message.toMessage()) 
+        if (this.isInitialized) {
+            this.websocket.send(message.toMessage())
+        }
     }
 }
 
