@@ -6,7 +6,7 @@ import ScreenSystem from "./screen_system"
 import MultiplayerSystem, { HandlerCallback } from "./multiplayer_system"
 
 import { registry } from "./ecs_registry"
-import { BoundingBox } from "./common"
+import { BoundingBox, RED, WHITE } from "./common"
 import { ALIGNMENT, GAME_SCREEN } from "./components"
 import { BaseScreen } from "../screens/base_screen"
 import { Entity } from "./ecs"
@@ -26,6 +26,7 @@ class WorldSystem {
     private player: number
     private opponent: number
     private timerTextEntity: number
+    private scoreBoardEntity: number
     private nameDisplayEntities: number[]
 
     private isMultiplayer: boolean
@@ -149,12 +150,12 @@ class WorldSystem {
         registry.walls.emplace(this.opponent)
 
         // Create the score board
-        const scoreboardTextE = createText(
+        this.scoreBoardEntity = createText(
             this.renderer, vec2.fromValues(this.renderer.gl.canvas.width / 2, 0),
             `${this.playerScore} - ${this.opponentScore}`, vec4.fromValues(0.65, 0.65, 0.65, 1), 1
         )
 
-        const scoreboardTextM = registry.motions.get(scoreboardTextE)
+        const scoreboardTextM = registry.motions.get(this.scoreBoardEntity)
         scoreboardTextM.position[1] += scoreboardTextM.scale[1] / 2
 
         // Create the name displays
@@ -221,7 +222,7 @@ class WorldSystem {
                 ballPos[0] = this.renderer.gl.canvas.width - ballPos[0]
                 ballVel[0] *= -1
             }
-
+            
             this.ball = createBall(ballPos, vec2.fromValues(50, 50), vec4.fromValues(1, 1, 1, 1))
             registry.motions.get(this.ball).positionalVel = ballVel
 
@@ -234,6 +235,8 @@ class WorldSystem {
 
         // Collision motion
         this.multiplayerSystem.setHandler(SERVER_EVENT.COLLISION_MOTION, (message) => {
+            if (!registry.balls.has(this.ball)) return
+            
             const ballPos = vec2.fromValues(
                 arrayToShort(message, 1), arrayToShort(message, 3))
             const ballVel = vec2.fromValues(
@@ -255,6 +258,56 @@ class WorldSystem {
 
             opMotion.position[1] = arrayToShort(message, 3)
         })
+
+        // Round end
+        this.multiplayerSystem.setHandler(SERVER_EVENT.ROUND_END, (message) => {
+            registry.removeAllComponentsOf(this.ball)
+            this.ball = -1
+            
+            const scores = [message[1], message[2]]
+            
+            let content: string
+            let color: vec4
+
+            if (this.isPlayer1) {
+                if (this.playerScore < scores[0]) {
+                    content = "You scored!"
+                    color = WHITE
+                } else {
+                    content = "The opponent scored!"
+                    color = RED
+                }
+                
+                this.playerScore = scores[0]
+                this.opponentScore = scores[1]
+            } else {
+                if (this.playerScore < scores[1]) {
+                    content = "You scored!"
+                    color = WHITE
+                } else {
+                    content = "The opponent scored!"
+                    color = RED
+                }
+
+                this.playerScore = scores[1]
+                this.opponentScore = scores[0]
+            }
+
+            setTextContent(this.renderer, this.scoreBoardEntity, `${this.playerScore}-${this.opponentScore}`)
+            const victoryText = createText(this.renderer,
+                vec2.fromValues(this.renderer.gl.canvas.width / 2, this.renderer.gl.canvas.height / 2),
+                content, color, 0.6)
+
+            createDelayedCallback(() => {
+                registry.removeAllComponentsOf(victoryText)
+            }, 1500)
+        })
+
+        this.multiplayerSystem.setHandler(SERVER_EVENT.RESULT, (message) => {
+            registry.screenStates.components[0].darkenScreenFactor = 0
+            this.currentScreen = GAME_SCREEN.POST_GAME_SCREEN
+            this.reinitializeWorld()
+        })
     }
 
     public setMultiplayerHandler(serverEvent: SERVER_EVENT, handlerCallback: HandlerCallback) {
@@ -264,6 +317,7 @@ class WorldSystem {
     public pushMultiplayerMessages(timeElapsed: number) {
         if (!this.isMultiplayer) return
         if (!this.multiplayerSystem.isInitialized) return
+        if (this.currentScreen !== GAME_SCREEN.GAME_SCREEN) return
         
         // We will broadcast our player's location at every iteration of the game loop
         // We could minimize the number of messages we sent further but this will do for now

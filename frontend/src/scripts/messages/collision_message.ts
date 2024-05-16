@@ -48,7 +48,7 @@ class CollisionMessage extends BaseMessage {
         ]
 
         if (this.tag !== undefined) {
-            payloadArray.push(...shortToArray(this.tag))
+            payloadArray.push(this.tag & 0xFF)
         }
         
         return new Uint8Array(payloadArray)
