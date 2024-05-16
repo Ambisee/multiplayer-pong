@@ -1,15 +1,17 @@
 import asyncio
-from uuid import UUID
+from asyncio import Task
+from uuid import UUID, uuid4
+from typing import List
 
 from websockets import WebSocketServerProtocol
 
 from .player import Player
-from ..types import Vec2
 
 
 class Room:
     p1: Player | None
     p2: Player | None
+    room_id: str
     
     win_threshold: int = 5
 
@@ -17,6 +19,7 @@ class Room:
     collision_payload_received: list[bool] = [False, False]
 
     def __init__(self, p1=None, p2=None, ball_pos=(0, 0), ball_vel=(0, 0)):
+        self.room_id = str(uuid4())
         self.p1: Player = p1
         self.p2: Player = p2
 
@@ -48,10 +51,10 @@ class Room:
         elif self.p2.score >= self.win_threshold:
             return 1  # Some values that represent PLAYER 2
     
-        return -1        
+        return -1
 
     async def broadcast(self, message: bytes):
-        targets = []
+        targets: List[Task[None]] = []
 
         # Create an asynchronous task for sending the message to each player
         if self.p1 is not None:
@@ -60,5 +63,4 @@ class Room:
         if self.p2 is not None:
             targets.append(asyncio.create_task(self.p2.ws_connection.send(message)))
 
-        # Wait until all messages have been sent
         await asyncio.wait(targets)

@@ -1,20 +1,24 @@
 import asyncio
 
 from .start_round import start_round
-from ..types.payloads import CollisionPayload, RoundEndPayload, CountdownStartPayload
+from ..types.payloads import \
+    CollisionPayload, RoundEndPayload, CountdownStartPayload, ResultPayload
 from ..objects.room import Room
 
 
 async def next_step(room: Room):
-    await asyncio.sleep(1)
+    await asyncio.sleep(1.5)
     
     # A player has won the game
     if room.game_end() != -1:
-        return
+        await room.broadcast(ResultPayload(room.p1.score, room.p2.score).to_bytes())
+        return f"Room {room.room_id}: Game finished."
     
     await room.broadcast(CountdownStartPayload().to_bytes())
     await asyncio.sleep(3)
     await start_round(room.p1.ws_connection)
+
+    return None
 
 
 async def end_round(p1_payload: CollisionPayload, p2_payload: CollisionPayload, room: Room):
@@ -33,4 +37,4 @@ async def end_round(p1_payload: CollisionPayload, p2_payload: CollisionPayload, 
     payload = RoundEndPayload(room.p1.score, room.p2.score)
     await room.broadcast(payload.to_bytes())
 
-    asyncio.create_task(next_step(room))
+    return asyncio.create_task(next_step(room))

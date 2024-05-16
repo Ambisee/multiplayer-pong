@@ -107,6 +107,26 @@ class OpponentMotionPayload(OutgoingPayload):
 
 
 @dataclass
+class RoundStartPayload(OutgoingPayload):
+    ball_pos: Vec2
+    ball_vel: Vec2
+
+    def to_bytes(self) -> bytes:
+        ball_pos_bytes = \
+            self.ball_pos[0].to_bytes(2, byteorder="little", signed=True) + \
+            self.ball_pos[1].to_bytes(2, byteorder="little", signed=True)
+
+        ball_vel_bytes = \
+            self.ball_vel[0].to_bytes(2, byteorder="little", signed=True) + \
+            self.ball_vel[1].to_bytes(2, byteorder="little", signed=True)
+
+        return \
+            SERVER_EVENT.ROUND_START.value.to_bytes() + \
+            ball_pos_bytes + \
+            ball_vel_bytes
+
+
+@dataclass
 class RoundEndPayload(OutgoingPayload):
     p1_score: int
     p2_score: int
@@ -114,4 +134,12 @@ class RoundEndPayload(OutgoingPayload):
     def to_bytes(self) -> bytes:
         return (
             SERVER_EVENT.ROUND_END.value.to_bytes() + self.p1_score.to_bytes() + self.p2_score.to_bytes()
+        )
+
+
+@dataclass
+class ResultPayload(RoundEndPayload):
+    def to_bytes(self) -> bytes:
+        return (
+            SERVER_EVENT.RESULT.value.to_bytes() + self.p1_score.to_bytes() + self.p2_score.to_bytes()
         )

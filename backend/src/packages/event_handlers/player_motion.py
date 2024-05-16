@@ -15,9 +15,9 @@ async def player_motion(ws: WebSocketServerProtocol, message: bytes):
     outgoing_message = OpponentMotionPayload(incoming_message.position)
 
     # Source client is player 1
-    if room.p1.ws_connection.id == ws.id:
+    if room.p1.ws_connection.id == ws.id and room.p2 is not None:
         await room.p2.ws_connection.send(outgoing_message.to_bytes())
     
     # Source client is player 2
-    else:
+    elif room.p1 is not None:
         await room.p1.ws_connection.send(outgoing_message.to_bytes())
