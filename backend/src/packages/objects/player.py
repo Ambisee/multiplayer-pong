@@ -8,7 +8,11 @@ class Player:
     score: int
     ws_connection: WebSocketServerProtocol
 
-    def __init__(self, position=[0, 0], score=0, ws_connection=None):
-        self.position = position
+    def __init__(self, position=None, score=0, ws_connection=None):
         self.score = score
         self.ws_connection = ws_connection
+        
+        if position is None:
+            self.position = [0, 0]
+        else:
+            self.position = position
