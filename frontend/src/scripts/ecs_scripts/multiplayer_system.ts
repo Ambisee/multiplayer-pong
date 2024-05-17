@@ -3,11 +3,13 @@ import ConnectMessage from "../messages/connect_message"
 import { SERVER_EVENT } from "../messages/message_enum"
 
 type HandlerCallback = (message: Uint8Array) => void
+type WSCloseCallback = (e: Event) => void
 
 class MultiplayerSystem {
     private url: string
     private websocket: WebSocket
     private eventHandlerMap: HandlerCallback[]
+    private closeHandlers: WSCloseCallback[]
 
     public isInitialized: boolean
 
@@ -42,24 +44,30 @@ class MultiplayerSystem {
         })
 
         this.websocket.addEventListener("error", (e) => {
-            console.error("Failed to establish a websocket connection.")
-            alert("Failed to establish a websocket connection. Please exit the game and try again")
+            for (let i = 0; i < this.closeHandlers.length; i++) {
+                this.closeHandlers[i](e)
+            }
         })
 
         this.websocket.addEventListener("open", (e) => {
             this.websocket.send((new ConnectMessage()).toMessage())
             this.isInitialized = true
-
         })
     }
-
+    
     public close() {
         this.websocket.close()
+        this.closeHandlers = []
+        this.eventHandlerMap = Array(SERVER_EVENT.SERVER_EVENT_COUNT).fill((e: Event) => {})
         this.isInitialized = false
     }
 
+    
+
     public sendMessage<T extends BaseMessage>(message: T) {
-        this.websocket.send(message.toMessage()) 
+        if (this.isInitialized) {
+            this.websocket.send(message.toMessage())
+        }
     }
 }
 

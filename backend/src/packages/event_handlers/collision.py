@@ -1,5 +1,6 @@
 from websockets import WebSocketServerProtocol
 
+from .end_round import end_round
 from ..managers import room_manager
 from ..types import CollisionPayload
 from ..ecs_systems.physics_system import PhysicSystem
@@ -31,6 +32,10 @@ async def collision(ws: WebSocketServerProtocol, message: bytes):
     # Get the values from the payload
     p1_payload = CollisionPayload.from_bytes(room.collision_payloads[0])
     p2_payload = CollisionPayload.from_bytes(room.collision_payloads[1])
+    
+    # Check if the ball hits a win zone
+    if p1_payload.tag is not None and p2_payload.tag is not None:
+        return await end_round(p1_payload, p2_payload, room)
 
     # Calculate the result of the collision
     if p1_payload.ball_vel[0] < 0 and p2_payload.ball_vel[0] < 0:
@@ -48,8 +53,8 @@ async def collision(ws: WebSocketServerProtocol, message: bytes):
             p2_payload.wall_scale,
         )
     else:
-        raise Exception("Payload values doesn't match.")
-    
+        raise ValueError("Payload values doesn't match.")
+
     # Refresh the collision payload statuses
     room.collision_payload_received = [False, False]
     room.collision_payloads = [None, None]

@@ -6,8 +6,8 @@ import ScreenSystem from "./screen_system"
 import MultiplayerSystem, { HandlerCallback } from "./multiplayer_system"
 
 import { registry } from "./ecs_registry"
-import { BoundingBox } from "./common"
-import { ALIGNMENT, GAME_SCREEN } from "./components"
+import { BoundingBox, clamp, RED, WHITE } from "./common"
+import { ALIGNMENT, GAME_SCREEN, RENDER_LAYER } from "./components"
 import { BaseScreen } from "../screens/base_screen"
 import { Entity } from "./ecs"
 import { setTextContent, setTextAlignment } from "../helper_scripts/component_helpers"
@@ -25,7 +25,9 @@ class WorldSystem {
     private ball: number
     private player: number
     private opponent: number
-    private timerTextEntity: number
+    private countdownTextEntity: number
+    private scoreBoardEntity: number
+    private alertTextEntity: number
     private nameDisplayEntities: number[]
 
     private isMultiplayer: boolean
@@ -38,8 +40,8 @@ class WorldSystem {
 
     public constructor(renderer: RenderSystem) {
         this.renderer = renderer
-        this.screenSystem = new ScreenSystem()
-        this.multiplayerSystem = new MultiplayerSystem("ws://127.0.0.1:8001")
+        this.screenSystem = new ScreenSystem(this.renderer.gl.canvas.width, this.renderer.gl.canvas.height)
+        this.multiplayerSystem = new MultiplayerSystem(`ws://${process.env.SERVER_HOST}:${process.env.SERVER_PORT}`)
         this.nameDisplayEntities = [-1, -1]
 
         this.init()
@@ -56,6 +58,11 @@ class WorldSystem {
     }
 
     public step(elapsedTimeMs: number) {
+        // Multiplayer mode features
+        if (this.isMultiplayer) {
+
+        }
+        
         // Decrement the time on the delayed callbacks and call them if time runs out
         for (let i = 0; i < registry.delayedCallbacks.length(); i++) {
             const delayedCallback = registry.delayedCallbacks.components[i]
@@ -144,12 +151,12 @@ class WorldSystem {
         registry.walls.emplace(this.opponent)
 
         // Create the score board
-        const scoreboardTextE = createText(
+        this.scoreBoardEntity = createText(
             this.renderer, vec2.fromValues(this.renderer.gl.canvas.width / 2, 0),
             `${this.playerScore} - ${this.opponentScore}`, vec4.fromValues(0.65, 0.65, 0.65, 1), 1
         )
 
-        const scoreboardTextM = registry.motions.get(scoreboardTextE)
+        const scoreboardTextM = registry.motions.get(this.scoreBoardEntity)
         scoreboardTextM.position[1] += scoreboardTextM.scale[1] / 2
 
         // Create the name displays
@@ -168,7 +175,7 @@ class WorldSystem {
         // In singleplayer, this function should be called immediately
         // In multiplayer, this function should be called only after two players are in a room
         if (!this.isMultiplayer) {
-            this.commenceGameCountdown()
+            this.startCountdown()
         } else {
             this.bindMultiplayerSystem()
             this.multiplayerSystem.init()
@@ -190,6 +197,32 @@ class WorldSystem {
         // Opponent disconnected
         this.multiplayerSystem.setHandler(SERVER_EVENT.OP_DISCONNECT, (message) => {
             this.isPlayer1 = true
+            
+            this.resetScore()
+            registry.removeAllComponentsOf(this.ball)
+            registry.removeAllComponentsOf(this.countdownTextEntity)
+
+            for (let i = 0; i < registry.delayedCallbacks.length(); i++) {
+                registry.removeAllComponentsOf(registry.delayedCallbacks.entities[i])
+            }
+
+            setTextContent(this.renderer, this.nameDisplayEntities[1], "Waiting for opponent...")
+            setTextAlignment(this.nameDisplayEntities[1], this.renderer.gl.canvas.width, ALIGNMENT.RIGHT)
+            setTextContent(this.renderer, this.scoreBoardEntity, `${this.playerScore} - ${this.opponentScore}`)
+            setTextAlignment(this.scoreBoardEntity, this.renderer.gl.canvas.width / 2, ALIGNMENT.CENTER)
+
+            registry.removeAllComponentsOf(this.alertTextEntity)
+
+            this.alertTextEntity = createText(
+                this.renderer, vec2.fromValues(this.renderer.gl.canvas.width / 2, this.renderer.gl.canvas.height / 2),
+                "Opponent disconnected", vec4.fromValues(0.5, 0.5, 0.5, 1), 0.5)
+            registry.renderRequests.get(this.alertTextEntity).renderLayer = RENDER_LAYER.L4
+
+            createDelayedCallback(() => {
+                if (registry.texts.has(this.alertTextEntity)) {
+                    registry.removeAllComponentsOf(this.alertTextEntity)
+                }
+            }, 2000)
         })
 
         // Countdown start
@@ -197,7 +230,7 @@ class WorldSystem {
             setTextContent(this.renderer, this.nameDisplayEntities[1], "Opponent")
             setTextAlignment(this.nameDisplayEntities[1], this.renderer.gl.canvas.width, ALIGNMENT.RIGHT)
 
-            this.commenceGameCountdown()
+            this.startCountdown()
         })
 
         // Round start
@@ -205,7 +238,8 @@ class WorldSystem {
             if (message.length != 9) {
                 throw Error("Expected a message length of 9.")
             }
-            
+
+            // Get the ball position and velocities
             const ballPos= vec2.fromValues(
                 arrayToShort(message, 1), arrayToShort(message, 3))
             const ballVel= vec2.fromValues(
@@ -215,13 +249,21 @@ class WorldSystem {
                 ballPos[0] = this.renderer.gl.canvas.width - ballPos[0]
                 ballVel[0] *= -1
             }
-
+            
             this.ball = createBall(ballPos, vec2.fromValues(50, 50), vec4.fromValues(1, 1, 1, 1))
             registry.motions.get(this.ball).positionalVel = ballVel
+
+            // Display a "start" at the center for 1 second
+            setTextContent(this.renderer, this.countdownTextEntity, "Start")
+            createDelayedCallback(() => {
+                registry.removeAllComponentsOf(this.countdownTextEntity)
+            }, 1000)
         })
 
         // Collision motion
         this.multiplayerSystem.setHandler(SERVER_EVENT.COLLISION_MOTION, (message) => {
+            if (!registry.balls.has(this.ball)) return
+            
             const ballPos = vec2.fromValues(
                 arrayToShort(message, 1), arrayToShort(message, 3))
             const ballVel = vec2.fromValues(
@@ -240,20 +282,74 @@ class WorldSystem {
         // Opponent Motion
         this.multiplayerSystem.setHandler(SERVER_EVENT.OP_MOTION, (message) => {
             const opMotion = registry.motions.get(this.opponent)
-            if (arrayToShort(message, 3) === opMotion.positionalVel[1]) {
-                return
-            }
 
-            vec2.set(opMotion.positionalVel, arrayToShort(message, 1), arrayToShort(message, 3))
+            opMotion.position[1] = arrayToShort(message, 3)
         })
 
-        this.multiplayerSystem.setHandler(SERVER_EVENT.COLLISION_MOTION, (message) => {
+        // Round end
+        this.multiplayerSystem.setHandler(SERVER_EVENT.ROUND_END, (message) => {
+            registry.removeAllComponentsOf(this.ball)
+            this.ball = -1
             
+            const scores = [message[1], message[2]]
+            
+            let content: string
+            let color: vec4
+
+            if (this.isPlayer1) {
+                if (this.playerScore < scores[0]) {
+                    content = "You scored!"
+                    color = WHITE
+                } else {
+                    content = "The opponent scored!"
+                    color = RED
+                }
+                
+                this.playerScore = scores[0]
+                this.opponentScore = scores[1]
+            } else {
+                if (this.playerScore < scores[1]) {
+                    content = "You scored!"
+                    color = WHITE
+                } else {
+                    content = "The opponent scored!"
+                    color = RED
+                }
+
+                this.playerScore = scores[1]
+                this.opponentScore = scores[0]
+            }
+
+            setTextContent(this.renderer, this.scoreBoardEntity, `${this.playerScore} - ${this.opponentScore}`)
+            this.alertTextEntity = createText(this.renderer,
+                vec2.fromValues(this.renderer.gl.canvas.width / 2, this.renderer.gl.canvas.height / 2),
+                content, color, 0.6)
+
+            createDelayedCallback(() => {
+                registry.removeAllComponentsOf(this.alertTextEntity)
+            }, 1500)
+        })
+
+        this.multiplayerSystem.setHandler(SERVER_EVENT.RESULT, (message) => {
+            registry.screenStates.components[0].darkenScreenFactor = 0
+            this.currentScreen = GAME_SCREEN.POST_GAME_SCREEN
+            this.reinitializeWorld()
         })
     }
 
     public setMultiplayerHandler(serverEvent: SERVER_EVENT, handlerCallback: HandlerCallback) {
         this.multiplayerSystem.setHandler(serverEvent, handlerCallback)
+    }
+
+    public pushMultiplayerMessages(timeElapsed: number) {
+        if (!this.isMultiplayer) return
+        if (!this.multiplayerSystem.isInitialized) return
+        if (this.currentScreen !== GAME_SCREEN.GAME_SCREEN) return
+        
+        // We will broadcast our player's location at every iteration of the game loop
+        // We could minimize the number of messages we sent further but this will do for now
+        const pMotion = registry.motions.get(this.player)
+        this.multiplayerSystem.sendMessage(new MotionMessage(pMotion.position))
     }
 
     public closeMultiplayer() {
@@ -262,11 +358,15 @@ class WorldSystem {
         }
     }
 
-    private commenceGameCountdown() {
-        this.timerTextEntity = createText(
+    private startCountdown() {
+        if (registry.texts.has(this.alertTextEntity)) {
+            registry.removeAllComponentsOf(this.alertTextEntity)
+        }
+
+        this.countdownTextEntity = createText(
             this.renderer, vec2.fromValues(this.renderer.gl.canvas.width / 2, this.renderer.gl.canvas.height / 2), 
             "3", vec4.fromValues(1, 1, 1, 1), 1.1)
-        const timerText = registry.texts.get(this.timerTextEntity)
+        const timerText = registry.texts.get(this.countdownTextEntity)
 
         // Timer count: 2
         createDelayedCallback(() => {
@@ -280,6 +380,8 @@ class WorldSystem {
 
         // Timer count: 0
         if (this.isMultiplayer) {
+            // The signal to start the game will
+            // be emitted from the server instead
             return
         }
 
@@ -304,10 +406,10 @@ class WorldSystem {
             const ballMotion = registry.motions.get(this.ball)
             ballMotion.positionalVel = vec2.fromValues(ballVelX, ballVelY)
 
-            setTextContent(this.renderer, this.timerTextEntity, "Start")
+            setTextContent(this.renderer, this.countdownTextEntity, "Start")
 
             createDelayedCallback(() => {
-                registry.removeAllComponentsOf(this.timerTextEntity)
+                registry.removeAllComponentsOf(this.countdownTextEntity)
             }, 1000)
         }, 3000)
     }
@@ -336,6 +438,7 @@ class WorldSystem {
                         )
                         
                         if (!this.isPlayer1) {
+                            message.wallPosition[0] = this.renderer.gl.canvas.width - message.wallPosition[0]
                             message.ballPosition[0] = this.renderer.gl.canvas.width - message.ballPosition[0]
                             message.ballVelocity[0] *= -1
                         }
@@ -366,8 +469,7 @@ class WorldSystem {
                             vec2.clone(ballMotion.position),
                             vec2.clone(ballMotion.positionalVel),
                             vec2.clone(otherMotion.position),
-                            vec2.clone(otherMotion.scale),
-                            2
+                            vec2.clone(otherMotion.scale)
                         )
                         
                         if (!this.isPlayer1) {
@@ -378,7 +480,6 @@ class WorldSystem {
 
                         this.multiplayerSystem.sendMessage(message)
                     }
-
 
                     PhysicSystem.reflectObject(ballMotion, otherMotion)
                 }
@@ -409,14 +510,14 @@ class WorldSystem {
         if (this.isPaused) return
         if (!registry.motions.has(this.player)) return
 
-
+        const opMotion = registry.motions.get(this.opponent)
         const pMotion = registry.motions.get(this.player)
-        if (pMotion.positionalVel[1] != 0) {
+        if (e.key === "w" || e.key === "s" && pMotion.positionalVel[1] != 0) {
             pMotion.positionalVel[1] = 0
+        }
 
-            if (this.isMultiplayer) {
-                this.multiplayerSystem.sendMessage(new MotionMessage(vec2.fromValues(0, 0)))
-            }
+        if (e.key === "ArrowUp" || e.key === "ArrowDown" && opMotion.positionalVel[1] != 0) {
+            opMotion.positionalVel[1] = 0
         }
     }
 
@@ -427,6 +528,7 @@ class WorldSystem {
         }
         
         const pMotion = registry.motions.get(this.player)
+        const opMotion = registry.motions.get(this.opponent)
 
         switch (e.key) {
             case "Escape":
@@ -439,21 +541,24 @@ class WorldSystem {
                 break
             case "w":
                 if (!this.isPaused) {
-                    if (this.isMultiplayer) {
-                        this.multiplayerSystem.sendMessage(new MotionMessage(vec2.fromValues(0, -5)))
-                    }
-
                     pMotion.positionalVel[1] = -5
                 }
                 
                 break
             case "s":
                 if (!this.isPaused) {
-                    if (this.isMultiplayer) {
-                        this.multiplayerSystem.sendMessage(new MotionMessage(vec2.fromValues(0, 5)))
-                    }
-
                     pMotion.positionalVel[1] = 5
+                }
+                break
+            case "ArrowUp":
+                if (!this.isPaused) {
+                    opMotion.positionalVel[1] = -5
+                }
+                
+                break
+            case "ArrowDown":
+                if (!this.isPaused) {
+                    opMotion.positionalVel[1] = 5
                 }
                 break
             default:
@@ -462,6 +567,9 @@ class WorldSystem {
     }
     
     private onMouseMove(e: MouseEvent) {
+        // e.x = e.x - window.innerWidth / 2 + this.renderer.gl.canvas.width / 2
+        // e.y = e.y - window.innerHeight / 2 + this.renderer.gl.canvas.height / 2
+
         // User is in a menu
         if (this.currentScreen !== GAME_SCREEN.GAME_SCREEN) {
             this.screenSystem.checkMouseOverUI(e)

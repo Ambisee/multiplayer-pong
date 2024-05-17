@@ -6,14 +6,14 @@ import { BaseScreen } from "./base_screen"
 import { ButtonBuilder } from "../ecs_scripts/ui_init"
 import { GAME_SCREEN, RENDER_LAYER } from "../ecs_scripts/components"
 import { registry } from "../ecs_scripts/ecs_registry"
-import { BoundingBox } from "../ecs_scripts/common"
+import { BLACK, BoundingBox, RED, WHITE } from "../ecs_scripts/common"
 
 class PostGameScreen extends BaseScreen {
     public initializeScreenEntities(world: WorldSystem, renderer: RenderSystem): void {
         super.initializeScreenEntities(world, renderer)
 
         const didPlayerWin = world.playerScore > world.opponentScore
-        let textColor = didPlayerWin ? this.WHITE : this.RED
+        let textColor = didPlayerWin ? WHITE : RED
 
         /**
          * Title
@@ -45,7 +45,7 @@ class PostGameScreen extends BaseScreen {
          * UI includes the player's title and total score
          */
 
-        textColor = !didPlayerWin ? this.WHITE : this.RED
+        textColor = !didPlayerWin ? WHITE : RED
 
         const opponentTextEntity = createText(
             renderer, vec2.fromValues(5 * oneEighthMidePoint[0], oneEighthMidePoint[1] - 1.5 * renderer.DEFAULT_FONTSIZE),
@@ -57,7 +57,7 @@ class PostGameScreen extends BaseScreen {
 
         const scoreDividerEntity = createRectangle(
             vec2.fromValues(4 * oneEighthMidePoint[0], oneEighthMidePoint[1]),
-            vec2.fromValues(35, 10), this.WHITE
+            vec2.fromValues(35, 10), WHITE
         )
 
         const opponentM = registry.motions.get(opponentTextEntity)
@@ -70,8 +70,8 @@ class PostGameScreen extends BaseScreen {
         const quitBtnBuilder = new ButtonBuilder(renderer)
 
         // Button color
-        playAgainBtnBuilder.setColor(this.WHITE, this.BLACK)
-        quitBtnBuilder.setColor(this.WHITE, this.BLACK)
+        playAgainBtnBuilder.setColor(WHITE, BLACK)
+        quitBtnBuilder.setColor(WHITE, BLACK)
 
         // Button motion
         const buttonSize = vec2.fromValues(125, 50)
@@ -114,11 +114,11 @@ class PostGameScreen extends BaseScreen {
                     
                     // Change color to red
                     const textRR = registry.renderRequests.get(playAgainBtnBuilder.buttonComponent.textEntity)
-                    vec4.copy(textRR.color, this.WHITE)
+                    vec4.copy(textRR.color, WHITE)
 
                     playAgainBtnBuilder.buttonComponent.associatedEntities.forEach((value) => {
                         const assocRR = registry.renderRequests.get(value)
-                        vec4.copy(assocRR.color, this.RED)
+                        vec4.copy(assocRR.color, RED)
                     })
                 },
                 onMouseExit: (e) => {
@@ -126,11 +126,11 @@ class PostGameScreen extends BaseScreen {
 
                     // Change color to white
                     const textRR = registry.renderRequests.get(playAgainBtnBuilder.buttonComponent.textEntity)
-                    vec4.copy(textRR.color, this.BLACK)
+                    vec4.copy(textRR.color, BLACK)
 
                     playAgainBtnBuilder.buttonComponent.associatedEntities.forEach((value) => {
                         const assocRR = registry.renderRequests.get(value)
-                        vec4.copy(assocRR.color, this.WHITE)
+                        vec4.copy(assocRR.color, WHITE)
                     })
                 },
             },
@@ -150,11 +150,11 @@ class PostGameScreen extends BaseScreen {
                     
                     // Change color to red
                     const textRR = registry.renderRequests.get(quitBtnBuilder.buttonComponent.textEntity)
-                    vec4.copy(textRR.color, this.WHITE)
+                    vec4.copy(textRR.color, WHITE)
 
                     quitBtnBuilder.buttonComponent.associatedEntities.forEach((value) => {
                         const assocRR = registry.renderRequests.get(value)
-                        vec4.copy(assocRR.color, this.RED)
+                        vec4.copy(assocRR.color, RED)
                     })
                 },
                 onMouseExit: (e) => {
@@ -162,11 +162,11 @@ class PostGameScreen extends BaseScreen {
 
                     // Change color to white
                     const textRR = registry.renderRequests.get(quitBtnBuilder.buttonComponent.textEntity)
-                    vec4.copy(textRR.color, this.BLACK)
+                    vec4.copy(textRR.color, BLACK)
 
                     quitBtnBuilder.buttonComponent.associatedEntities.forEach((value) => {
                         const assocRR = registry.renderRequests.get(value)
-                        vec4.copy(assocRR.color, this.WHITE)
+                        vec4.copy(assocRR.color, WHITE)
                     })
                 },
             }

@@ -5,14 +5,23 @@ from ..types import Vec2
 
 
 class IncomingPayload:
+    LEFT_WALL = 0
+    RIGHT_WALL = 1
+
     @staticmethod
     def from_bytes(payload):
         pass
 
 
 class OutgoingPayload:
-    def to_bytes(self):
+    def to_bytes(self) -> bytes:
         pass
+
+
+@dataclass
+class CountdownStartPayload(OutgoingPayload):
+    def to_bytes(self) -> bytes:
+        return SERVER_EVENT.COUNTDOWN_START.value.to_bytes()
 
 
 @dataclass
@@ -21,7 +30,7 @@ class CollisionPayload(IncomingPayload):
     ball_vel: Vec2
     wall_pos: Vec2
     wall_scale: Vec2
-    tag: int
+    tag: int | None
 
     @staticmethod
     def from_bytes(payload):
@@ -50,8 +59,10 @@ class CollisionPayload(IncomingPayload):
 
         if len(payload) > 17:
             tag = int.from_bytes(payload[17:])
+            result.tag = tag
+        else:
+            result.tag = None
 
-        result.tag = tag
         return result
 
 
@@ -71,7 +82,7 @@ class CollisionMotionPayload(OutgoingPayload):
 
 @dataclass
 class MotionPayload(IncomingPayload):
-    velocity: Vec2
+    position: Vec2
 
     @staticmethod
     def from_bytes(payload):
@@ -86,10 +97,49 @@ class MotionPayload(IncomingPayload):
 
 @dataclass
 class OpponentMotionPayload(OutgoingPayload):
-    velocity: Vec2
+    position: Vec2
 
     def to_bytes(self):
-        vel_x = self.velocity[0].to_bytes(2, byteorder='little', signed=True)
-        vel_y = self.velocity[1].to_bytes(2, byteorder='little', signed=True)
+        vel_x = self.position[0].to_bytes(2, byteorder='little', signed=True)
+        vel_y = self.position[1].to_bytes(2, byteorder='little', signed=True)
 
         return SERVER_EVENT.OP_MOTION.value.to_bytes() + vel_x + vel_y
+
+
+@dataclass
+class RoundStartPayload(OutgoingPayload):
+    ball_pos: Vec2
+    ball_vel: Vec2
+
+    def to_bytes(self) -> bytes:
+        ball_pos_bytes = \
+            self.ball_pos[0].to_bytes(2, byteorder="little", signed=True) + \
+            self.ball_pos[1].to_bytes(2, byteorder="little", signed=True)
+
+        ball_vel_bytes = \
+            self.ball_vel[0].to_bytes(2, byteorder="little", signed=True) + \
+            self.ball_vel[1].to_bytes(2, byteorder="little", signed=True)
+
+        return \
+            SERVER_EVENT.ROUND_START.value.to_bytes() + \
+            ball_pos_bytes + \
+            ball_vel_bytes
+
+
+@dataclass
+class RoundEndPayload(OutgoingPayload):
+    p1_score: int
+    p2_score: int
+
+    def to_bytes(self) -> bytes:
+        return (
+            SERVER_EVENT.ROUND_END.value.to_bytes() + self.p1_score.to_bytes() + self.p2_score.to_bytes()
+        )
+
+
+@dataclass
+class ResultPayload(RoundEndPayload):
+    def to_bytes(self) -> bytes:
+        return (
+            SERVER_EVENT.RESULT.value.to_bytes() + self.p1_score.to_bytes() + self.p2_score.to_bytes()
+        )

@@ -1,6 +1,6 @@
 **/.vscode
 **/*.code-workspace
-**/.env
+**/.env*
 
 # Frontend
 frontend/node_modules

@@ -2,43 +2,42 @@ import random
 
 from websockets import WebSocketServerProtocol
 
-from ..types import SERVER_EVENT
 from ..managers import room_manager
-from ..helpers import array_to_bytes
+from ..types.payloads import RoundStartPayload
 from ..ecs_systems.physics_system import PhysicSystem
 
 
-def create_start_round_message(position: bytes, velocity: bytes):
-    b_event = SERVER_EVENT.ROUND_START.value.to_bytes(1, "little")
-    
-    return b_event + position + velocity
-
-
 async def start_round(ws: WebSocketServerProtocol):
+    # Get the client's room
+    room = room_manager.client_room_map.get(ws.id)
+    if room is None:
+        raise ValueError(f"Client {ws.id} disconnected during round start phase.")
+
+
     # Create a random ball position and velocity
-    w_width = 1280
-    w_height = 720
+    # Screen and dimensions when two browser tabs are open with equal widths and full height, and zoom in the browsers to 67%
+    w_width = 959
+    w_height = 851
 
-    ball_pos = array_to_bytes([
-        random.randrange(0.25 * w_width, 0.75 * w_width),
-        random.randrange(PhysicSystem.BALL_RADIUS, w_height - PhysicSystem.BALL_RADIUS),
-    ])
+    # ball_pos = [
+    #     random.randrange(0.25 * w_width, 0.75 * w_width),
+    #     random.randrange(PhysicSystem.BALL_RADIUS, w_height - PhysicSystem.BALL_RADIUS),
+    # ]
 
-    ball_vel = array_to_bytes([
-        (-1)**round(random.random()) * 5,
-        (-1)**round(random.random()) * 5
-    ])
+    # ball_vel = [
+    #     (-1)**round(random.random()) * 5,
+    #     (-1)**round(random.random()) * 5
+    # ]
 
     # Generate a random position and velocity to spawn the ball
-    ball_pos = array_to_bytes([w_width // 2, w_height // 2])
-    ball_vel = array_to_bytes([1, 1])
-    
+    ball_pos = [w_width // 2, w_height // 2]
+    ball_vel = [-5, 5]
+
     # Create the message
-    payload = create_start_round_message(ball_pos, ball_vel)
-    room = room_manager.client_room_map[ws.id]
+    payload = RoundStartPayload(ball_pos, ball_vel)
 
     # Make sure the collision payloads are properly reset
     room.collision_payload_received = [False, False]
     room.collision_payloads = [None, None]
 
-    await room.broadcast(payload)
+    await room.broadcast(payload.to_bytes())

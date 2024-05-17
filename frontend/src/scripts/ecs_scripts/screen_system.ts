@@ -8,20 +8,32 @@ import { BoundingBox } from "./common"
 import PauseMenu from "../screens/pause_menu"
 import PreGameScreen from "../screens/pre_game_screen"
 import PostGameScreen from "../screens/post_game_screen"
+import {GAME_WINDOW_HEIGHT, GAME_WINDOW_WIDTH} from "../config"
 
 type ScreenMap = Map<GAME_SCREEN, BaseScreen>
 
+interface MousePosition {
+    x: number 
+    y: number
+}
+
 class ScreenSystem {
     // private tabIndex: number
-    
+    private windowWidth: number
+    private windowHeight: number
+
     public screenEntities: number[]
     public buttonToCallbacksMap: ButtonCallback[]
     public keyToCallback: Map<string, (e: KeyboardEvent) => void>
 
     public gameScreenToRender: ScreenMap
 
-    public constructor() {
-        // this.tabIndex = -1
+    public constructor(
+        windowWidth: number = GAME_WINDOW_WIDTH, 
+        windowHeight: number = GAME_WINDOW_HEIGHT
+    ) {
+        this.windowWidth = windowWidth
+        this.windowHeight = windowHeight
 
         this.screenEntities = []
         this.buttonToCallbacksMap = []
@@ -39,15 +51,23 @@ class ScreenSystem {
             GAME_SCREEN.POST_GAME_SCREEN, new PostGameScreen(this.screenEntities, this.buttonToCallbacksMap, this.keyToCallback))
     }
 
+    public getMousePositionOnCanvas(e: MouseEvent) {
+        return {
+            x: e.x - window.innerWidth / 2 + this.windowWidth / 2,
+            y: e.y - window.innerHeight / 2 + this.windowHeight / 2
+        }
+    }
+
     public checkMouseOverUI(e: MouseEvent) {
         // Array to collect the entities the mouse is hovering over
         const mouseOverEntities = []
+        const {x, y} = this.getMousePositionOnCanvas(e)
 
         for (let i = 0; i < registry.buttons.length(); i++) {
             const entity = registry.buttons.entities[i]
             const component = registry.buttons.components[i]
 
-            if (this.isMouseOver(entity, e.x, e.y)) {
+            if (this.isMouseOver(entity, x, y)) {
                 // this.tabIndex = i // Assuming that the number of buttons matches the length of the buttonToCallbacksMap array
                 mouseOverEntities.push(entity)
                 component.isMouseHovering = true
@@ -92,11 +112,13 @@ class ScreenSystem {
             return
         }
 
+        const {x, y} = this.getMousePositionOnCanvas(e)
+
         for (let i = 0; i < registry.buttons.length(); i++) {
             const component = registry.buttons.components[i]
             const entity = registry.buttons.entities[i]
 
-            if (component.isMouseHovering && this.isMouseOver(entity, e.x, e.y)) {
+            if (component.isMouseHovering && this.isMouseOver(entity, x, y)) {
                 component.onMouseDown(e)
             }
         }
