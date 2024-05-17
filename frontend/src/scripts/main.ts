@@ -2,6 +2,7 @@ import RenderSystem from "./ecs_scripts/render_system"
 import WorldSystem from "./ecs_scripts/world_system"
 import PhysicSystem from "./ecs_scripts/physics_system"
 import { staticManager } from "./helper_scripts/static_manager"
+import { GAME_WINDOW_WIDTH, GAME_WINDOW_HEIGHT } from "./config"
 
 const canvasElementID = "#webgl-context"
 const siteState = {isStarted: false}
@@ -18,13 +19,16 @@ function getGL() {
     // gl.canvas.width = minLengthPerPixel * 16
     // gl.canvas.height = minLengthPerPixel * 9
 
-    gl.canvas.width = window.innerWidth
-    gl.canvas.height = window.innerHeight
+    gl.canvas.width = GAME_WINDOW_WIDTH
+    gl.canvas.height = GAME_WINDOW_HEIGHT
 
-    window.addEventListener("resize", (e) => {
-        gl.canvas.width = window.innerWidth
-        gl.canvas.height = window.innerHeight
-    })
+    // gl.canvas.width = window.innerWidth
+    // gl.canvas.height = window.innerHeight
+
+    // window.addEventListener("resize", (e) => {
+    //     gl.canvas.width = window.innerWidth
+    //     gl.canvas.height = window.innerHeight
+    // })
 
     return gl
 }
@@ -89,7 +93,7 @@ async function main() {
         return
     }
 
-    if (window.innerWidth >= 1280 && window.innerHeight >= 720) {
+    if (window.innerWidth >= GAME_WINDOW_WIDTH && window.innerHeight >= GAME_WINDOW_HEIGHT) {
         switchToGameWindow()
         siteState.isStarted = true
         initializeGame()
@@ -98,7 +102,7 @@ async function main() {
     
     const resizeObserver = new ResizeObserver((entries) => {
         const body = document.querySelector("body")
-        if (body.clientWidth >= 1280 && body.clientHeight >= 720) {
+        if (body.clientWidth >= GAME_WINDOW_WIDTH && body.clientHeight >= GAME_WINDOW_HEIGHT) {
             switchToGameWindow()
             siteState.isStarted = true
             initializeGame()

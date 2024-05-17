@@ -12,6 +12,7 @@
         }
 
         html, body {
+            color: white;
             background-color: black;
             position: relative;
             height: 100%;
@@ -21,6 +22,8 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
+
+            font-family: sans-serif;
         }
 
         .hidden {
@@ -31,11 +34,25 @@
             color: white;
             font-family: sans-serif;
         }
+
+        #webgl-context {
+            border: none;
+        }
+
+        @media screen and (min-width: 1281px) and (min-height: 721px) {
+            #webgl-context {
+                border: 1px solid white;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1 class="fullscreen-notice">This game requires fullscreen to be toggled.</h1>
-    <h4 class="fullscreen-notice">Press <code>F11</code> to toggle fullscreen</h4>
+    <h1 class="fullscreen-notice">This game requires a screen dimension of at least 1280x720</h1>
+    <br class="fullscreen-notice" />
+    <ul class="fullscreen-notice">
+        <li>Press <code>F11</code> to toggle fullscreen.</li>
+        <li>Zoom out until the game screen loads in</li>
+    </ul>
     
     <canvas class="hidden" id="webgl-context"></canvas>
     <script type="module" src="./scripts/main.ts"></script>

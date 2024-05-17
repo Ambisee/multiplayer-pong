@@ -40,7 +40,7 @@ class WorldSystem {
 
     public constructor(renderer: RenderSystem) {
         this.renderer = renderer
-        this.screenSystem = new ScreenSystem()
+        this.screenSystem = new ScreenSystem(this.renderer.gl.canvas.width, this.renderer.gl.canvas.height)
         this.multiplayerSystem = new MultiplayerSystem(`ws://${process.env.SERVER_HOST}:${process.env.SERVER_PORT}`)
         this.nameDisplayEntities = [-1, -1]
 
@@ -567,6 +567,9 @@ class WorldSystem {
     }
     
     private onMouseMove(e: MouseEvent) {
+        // e.x = e.x - window.innerWidth / 2 + this.renderer.gl.canvas.width / 2
+        // e.y = e.y - window.innerHeight / 2 + this.renderer.gl.canvas.height / 2
+
         // User is in a menu
         if (this.currentScreen !== GAME_SCREEN.GAME_SCREEN) {
             this.screenSystem.checkMouseOverUI(e)
