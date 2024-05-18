@@ -7,7 +7,7 @@ import MultiplayerSystem, { HandlerCallback } from "./multiplayer_system"
 
 import { registry } from "./ecs_registry"
 import { BoundingBox, clamp, RED, WHITE } from "./common"
-import { AI_TYPE, ALIGNMENT, GAME_SCREEN, RENDER_LAYER } from "./components"
+import { ALIGNMENT, GAME_MODE, GAME_SCREEN, RENDER_LAYER } from "./components"
 import { BaseScreen } from "../screens/base_screen"
 import { Entity } from "./ecs"
 import { setTextContent, setTextAlignment } from "../helper_scripts/component_helpers"
@@ -30,7 +30,7 @@ class WorldSystem {
     private alertTextEntity: number
     private nameDisplayEntities: number[]
 
-    private isMultiplayer: boolean
+    private gameMode: GAME_MODE
     private isPlayer1: boolean
     
     public currentScreen: GAME_SCREEN = GAME_SCREEN.MAIN_MENU
@@ -58,6 +58,11 @@ class WorldSystem {
     }
 
     public step(elapsedTimeMs: number) {
+        // Multiplayer mode features
+        if (this.isMultiplayer()) {
+
+        }
+        
         // Decrement the time on the delayed callbacks and call them if time runs out
         for (let i = 0; i < registry.delayedCallbacks.length(); i++) {
             const delayedCallback = registry.delayedCallbacks.components[i]
@@ -77,9 +82,9 @@ class WorldSystem {
         this.playerScore = 0
     }
     
-    public play(isMultiplayer: boolean) {
+    public play(gameMode: GAME_MODE) {
         this.currentScreen = GAME_SCREEN.GAME_SCREEN
-        this.isMultiplayer = isMultiplayer
+        this.gameMode = gameMode
         this.isPlayer1 = false
         this.reinitializeWorld()
         this.resetScore()
@@ -144,10 +149,6 @@ class WorldSystem {
             vec4.fromValues(1, 1, 1, 1)
         )
         registry.walls.emplace(this.opponent)
-        
-        if (!this.isMultiplayer) {
-            registry.ais.emplace(this.opponent).type = AI_TYPE.OPPONENT
-        }
 
         // Create the score board
         this.scoreBoardEntity = createText(
@@ -160,7 +161,7 @@ class WorldSystem {
 
         // Create the name displays
         const displayNames = ["Player", "Waiting for opponent..."]
-        if (!this.isMultiplayer) {displayNames[1] = "Opponent"}
+        if (!this.isMultiplayer()) {displayNames[1] = "Opponent"}
 
         this.nameDisplayEntities = displayNames.map(value => {
             return createText(
@@ -173,7 +174,7 @@ class WorldSystem {
 
         // In singleplayer, this function should be called immediately
         // In multiplayer, this function should be called only after two players are in a room
-        if (!this.isMultiplayer) {
+        if (!this.isMultiplayer()) {
             this.startCountdown()
         } else {
             this.bindMultiplayerSystem()
@@ -341,7 +342,7 @@ class WorldSystem {
     }
 
     public pushMultiplayerMessages(timeElapsed: number) {
-        if (!this.isMultiplayer) return
+        if (!this.isMultiplayer()) return
         if (!this.multiplayerSystem.isInitialized) return
         if (this.currentScreen !== GAME_SCREEN.GAME_SCREEN) return
         
@@ -378,7 +379,7 @@ class WorldSystem {
         }, 2000)
 
         // Timer count: 0
-        if (this.isMultiplayer) {
+        if (this.isMultiplayer()) {
             // The signal to start the game will
             // be emitted from the server instead
             return
@@ -424,7 +425,7 @@ class WorldSystem {
                     const endGameWall = registry.endGameWalls.get(collision.entityOther)
 
                     // If player is in multiplayer, send the collision event to the server
-                    if (this.isMultiplayer) {
+                    if (this.isMultiplayer()) {
                         const ballMotion = registry.motions.get(this.ball)
                         const wallMotion = registry.motions.get(collision.entityOther)
 
@@ -463,7 +464,7 @@ class WorldSystem {
                     const ballMotion = registry.motions.get(this.ball)
                     const otherMotion = registry.motions.get(collision.entityOther)
 
-                    if (this.isMultiplayer) {
+                    if (this.isMultiplayer()) {
                         const message = new CollisionMessage(
                             vec2.clone(ballMotion.position),
                             vec2.clone(ballMotion.positionalVel),
@@ -505,6 +506,10 @@ class WorldSystem {
         registry.collisions.clear()
     }
 
+    private isMultiplayer() {
+        return this.gameMode === GAME_MODE.MULTIPLAYER
+    }
+
     private onKeyUp(e: KeyboardEvent) {
         if (this.isPaused) return
         if (!registry.motions.has(this.player)) return
@@ -515,7 +520,7 @@ class WorldSystem {
             pMotion.positionalVel[1] = 0
         }
 
-        if (e.key === "ArrowUp" || e.key === "ArrowDown" && opMotion.positionalVel[1] != 0) {
+        if (e.key === "ArrowUp" || e.key === "ArrowDown" && opMotion.positionalVel[1] != 0 && this.gameMode === GAME_MODE.TWOPLAYER) {
             opMotion.positionalVel[1] = 0
         }
     }
@@ -539,26 +544,16 @@ class WorldSystem {
                 this.reinitializeWorld()
                 break
             case "w":
-                if (!this.isPaused) {
-                    pMotion.positionalVel[1] = -5
-                }
-                
+                if (!this.isPaused) {pMotion.positionalVel[1] = -5}
                 break
             case "s":
-                if (!this.isPaused) {
-                    pMotion.positionalVel[1] = 5
-                }
+                if (!this.isPaused) {pMotion.positionalVel[1] = 5}
                 break
             case "ArrowUp":
-                if (!this.isPaused) {
-                    opMotion.positionalVel[1] = -5
-                }
-                
+                if (!this.isPaused && this.gameMode === GAME_MODE.TWOPLAYER) {opMotion.positionalVel[1] = -5}
                 break
             case "ArrowDown":
-                if (!this.isPaused) {
-                    opMotion.positionalVel[1] = 5
-                }
+                if (!this.isPaused && this.gameMode === GAME_MODE.TWOPLAYER) {opMotion.positionalVel[1] = 5}
                 break
             default:
                 break

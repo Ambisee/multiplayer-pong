@@ -198,6 +198,13 @@ enum GAME_SCREEN {
     GAME_SCREEN_COUNT = END_SCREEN + 1
 }
 
+enum GAME_MODE {
+    SINGLEPLAYER = 0,
+    TWOPLAYER = SINGLEPLAYER + 1,
+    MULTIPLAYER = TWOPLAYER + 1,
+    GAME_MODE_COUNT = MULTIPLAYER + 1
+}
+
 enum ALIGNMENT {
     LEFT = 0,
     CENTER = LEFT + 1,
@@ -227,5 +234,5 @@ class RenderRequest extends Component {
 export {
     Motion, Player, RenderRequest, NonCollidable, Collision, Wall, Ball, Opponent, 
     Text, Button, ScreenState, EndGameWall, DelayedCallback, AI,
-    AI_TYPE, GEOMETRY, EFFECTS, TEXTURE, ALIGNMENT, RENDER_LAYER, GAME_SCREEN
+    AI_TYPE, GEOMETRY, EFFECTS, TEXTURE, ALIGNMENT, RENDER_LAYER, GAME_SCREEN, GAME_MODE
 }
