@@ -200,10 +200,6 @@ class RenderSystem {
             }
 
             let renderRequest = registry.renderRequests.get(entity)
-            if (renderRequest.hide) {
-                continue
-            }
-
             let motion = registry.motions.get(entity)
 
             switch (renderRequest.geometry) {
