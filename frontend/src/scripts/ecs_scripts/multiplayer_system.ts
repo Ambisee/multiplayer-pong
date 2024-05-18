@@ -17,6 +17,7 @@ class MultiplayerSystem {
     public constructor(url: string) {
         this.url = url
         this.isInitialized = false
+        this.closeHandlers = []
         this.eventHandlerMap = Array(SERVER_EVENT.SERVER_EVENT_COUNT)
     }
 
