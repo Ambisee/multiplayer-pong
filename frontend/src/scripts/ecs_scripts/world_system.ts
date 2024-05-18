@@ -7,7 +7,7 @@ import MultiplayerSystem, { HandlerCallback } from "./multiplayer_system"
 
 import { registry } from "./ecs_registry"
 import { BoundingBox, clamp, RED, WHITE } from "./common"
-import { ALIGNMENT, GAME_MODE, GAME_SCREEN, RENDER_LAYER } from "./components"
+import { AI_TYPE, ALIGNMENT, GAME_MODE, GAME_SCREEN, RENDER_LAYER } from "./components"
 import { BaseScreen } from "../screens/base_screen"
 import { Entity } from "./ecs"
 import { setTextContent, setTextAlignment } from "../helper_scripts/component_helpers"
@@ -148,7 +148,11 @@ class WorldSystem {
             vec2.fromValues(25, 150),
             vec4.fromValues(1, 1, 1, 1)
         )
+        
         registry.walls.emplace(this.opponent)
+        if (this.gameMode === GAME_MODE.SINGLEPLAYER) {
+            registry.ais.emplace(this.opponent).type = AI_TYPE.OPPONENT
+        }
 
         // Create the score board
         this.scoreBoardEntity = createText(

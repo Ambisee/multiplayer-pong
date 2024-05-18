@@ -2,14 +2,14 @@ import { AI_TYPE } from "./components"
 import { registry } from "./ecs_registry"
 
 class AISystem {
-    private activationInterval: number = 500
+    private activationInterval: number = 250
 
     private aiTypeToHandler: Map<AI_TYPE, (entity: number) => void>
     private elapsedInternalTimer: number
     
     public constructor() {
         this.aiTypeToHandler = new Map()
-        this.elapsedInternalTimer = 0
+        this.elapsedInternalTimer = this.activationInterval
 
         this.aiTypeToHandler.set(AI_TYPE.OPPONENT, this.activateOpponentAI)
     }
