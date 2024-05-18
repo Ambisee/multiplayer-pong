@@ -5,7 +5,7 @@ import { BaseScreen } from "./base_screen"
 import { registry } from "../ecs_scripts/ecs_registry"
 import { ButtonBuilder } from "../ecs_scripts/ui_init"
 import WorldSystem from "../ecs_scripts/world_system"
-import { GAME_SCREEN } from "../ecs_scripts/components"
+import { GAME_MODE, GAME_SCREEN } from "../ecs_scripts/components"
 import { BLACK, RED, WHITE } from "../ecs_scripts/common"
 
 class MainMenu extends BaseScreen {
@@ -65,7 +65,7 @@ class MainMenu extends BaseScreen {
             {
                 entity: sPlayBtnBuilder.entity,
                 onMouseDown: (e: MouseEvent) => {
-                    world.play(false)
+                    world.play(GAME_MODE.SINGLEPLAYER)
                 },
                 onMouseEnter: (e) => {
                     vec4.copy(sPlayBtnTextRR.color, WHITE)
@@ -83,7 +83,7 @@ class MainMenu extends BaseScreen {
             {
                 entity: mPlayBtnBuilder.entity, 
                 onMouseDown: (e: MouseEvent) => {
-                    world.play(true)
+                    world.play(GAME_MODE.MULTIPLAYER)
                 },
                 onMouseEnter: (e) => {
                     vec4.copy(mPlayBtnTextRR.color, WHITE)
