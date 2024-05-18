@@ -33,6 +33,16 @@ class Ball extends Component {}
 class NonCollidable extends Component {}
 class Wall extends Component {}
 
+class AI extends Component {
+    public type: AI_TYPE
+
+    public constructor(type: AI_TYPE = AI_TYPE.OPPONENT) {
+        super()
+
+        this.type = type
+    }
+}
+
 class Text extends Component {
     public content: string
     
@@ -172,6 +182,12 @@ enum RENDER_LAYER {
     RENDER_LAYER_COUNT = U4 + 1,
 }
 
+enum AI_TYPE {
+    NONE = 0,
+    OPPONENT = NONE + 1,
+    AI_TYPE_COUNT = OPPONENT + 1
+}
+
 enum GAME_SCREEN {
     MAIN_MENU = 0,
     GAME_SCREEN = MAIN_MENU + 1,
@@ -210,6 +226,6 @@ class RenderRequest extends Component {
 
 export {
     Motion, Player, RenderRequest, NonCollidable, Collision, Wall, Ball, Opponent, 
-    Text, Button, ScreenState, EndGameWall, DelayedCallback,
-    GEOMETRY, EFFECTS, TEXTURE, ALIGNMENT, RENDER_LAYER, GAME_SCREEN
+    Text, Button, ScreenState, EndGameWall, DelayedCallback, AI,
+    AI_TYPE, GEOMETRY, EFFECTS, TEXTURE, ALIGNMENT, RENDER_LAYER, GAME_SCREEN
 }

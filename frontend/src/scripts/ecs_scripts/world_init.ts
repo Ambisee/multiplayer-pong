@@ -86,6 +86,8 @@ function createBall(position: vec2, scale: vec2, color: vec4) {
     renderRequest.renderLayer = RENDER_LAYER.L0
     renderRequest.color = color
 
+    registry.balls.emplace(entity)
+
     return entity
 }
 

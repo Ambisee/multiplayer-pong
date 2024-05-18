@@ -3,6 +3,7 @@ import WorldSystem from "./ecs_scripts/world_system"
 import PhysicSystem from "./ecs_scripts/physics_system"
 import { staticManager } from "./helper_scripts/static_manager"
 import { GAME_WINDOW_WIDTH, GAME_WINDOW_HEIGHT } from "./config"
+import AISystem from "./ecs_scripts/ai_system"
 
 const canvasElementID = "#webgl-context"
 const siteState = {isStarted: false}
@@ -37,6 +38,7 @@ function loop(
     renderer: RenderSystem,
     world: WorldSystem,
     physics: PhysicSystem,
+    ai: AISystem,
     previousTime: number
 ) {
     const timeElapsed = Date.now() - previousTime
@@ -44,6 +46,7 @@ function loop(
     world.step(timeElapsed)
 
     if (!world.isPaused) {
+        ai.step(timeElapsed)
         physics.step(timeElapsed)
         world.handleCollision(timeElapsed)
         world.pushMultiplayerMessages(timeElapsed)
@@ -56,6 +59,7 @@ function loop(
         renderer,
         world,
         physics,
+        ai,
         newPreviousTime
     ))
 }
@@ -71,8 +75,9 @@ async function initializeGame() {
 
     const world: WorldSystem = new WorldSystem(renderer)
     const physics: PhysicSystem = new PhysicSystem()
+    const ai: AISystem = new AISystem()
 
-    loop(renderer, world, physics, Date.now())
+    loop(renderer, world, physics, ai, Date.now())
 }
 
 function switchToGameWindow() {
