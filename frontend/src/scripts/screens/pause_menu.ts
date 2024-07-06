@@ -60,7 +60,11 @@ class PauseMenu extends BaseScreen {
                 onMouseDown: (e) => {
                     registry.screenStates.components[0].darkenScreenFactor = 0
                     world.currentScreen = GAME_SCREEN.GAME_SCREEN
-                    world.isPaused = false
+                    
+                    if (registry.gameStates.length() > 0) {
+                        registry.gameStates.components[0].isPaused = false
+                    }
+
                     this.cleanup()
                 },
                 onMouseEnter: (e) => {
@@ -132,7 +136,12 @@ class PauseMenu extends BaseScreen {
         this.keyToCallback.set("Escape", (e) => {
             registry.screenStates.components[0].darkenScreenFactor = 0
             world.currentScreen = GAME_SCREEN.GAME_SCREEN
-            world.isPaused = false
+            document.body.style.cursor = "default"
+            
+            if (registry.gameStates.length() > 0) {
+                registry.gameStates.components[0].isPaused = false
+            }
+
             this.cleanup()
         })
     }

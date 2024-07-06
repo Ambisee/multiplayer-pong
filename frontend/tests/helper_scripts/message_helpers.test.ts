@@ -1,4 +1,4 @@
-import { arrayToShort, shortToArray } from "../src/scripts/helper_scripts/messaging_helpers"
+import { arrayToShort, shortToArray } from "../../src/scripts/helper_scripts/messaging_helpers"
 
 
 describe("Message Helper tests", () => {

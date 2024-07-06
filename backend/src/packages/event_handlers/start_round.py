@@ -1,3 +1,4 @@
+import os
 import random
 
 from websockets import WebSocketServerProtocol
@@ -16,22 +17,22 @@ async def start_round(ws: WebSocketServerProtocol):
 
     # Create a random ball position and velocity
     # Screen and dimensions when two browser tabs are open with equal widths and full height, and zoom in the browsers to 67%
-    w_width = 959
-    w_height = 851
+    w_width = 1280
+    w_height = 720
 
-    # ball_pos = [
-    #     random.randrange(0.25 * w_width, 0.75 * w_width),
-    #     random.randrange(PhysicSystem.BALL_RADIUS, w_height - PhysicSystem.BALL_RADIUS),
-    # ]
+    ball_pos = [
+        random.randrange(0.25 * w_width, 0.75 * w_width),
+        random.randrange(PhysicSystem.BALL_RADIUS, w_height - PhysicSystem.BALL_RADIUS),
+    ]
 
-    # ball_vel = [
-    #     (-1)**round(random.random()) * 5,
-    #     (-1)**round(random.random()) * 5
-    # ]
+    ball_vel = [
+        (-1)**round(random.random()) * 375,
+        (-1)**round(random.random()) * 375
+    ]
 
     # Generate a random position and velocity to spawn the ball
-    ball_pos = [w_width // 2, w_height // 2]
-    ball_vel = [-5, 5]
+    # ball_pos = [w_width // 2, w_height // 2]
+    # ball_vel = [-10, 10]
 
     # Create the message
     payload = RoundStartPayload(ball_pos, ball_vel)

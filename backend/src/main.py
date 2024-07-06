@@ -12,7 +12,7 @@ async def main():
     logging.info("APP: Booting up WebSocket server...")
     async with websockets.serve(
         handle_connection,
-        os.getenv("SERVER_HOST", "localhost"),
+        os.getenv("SERVER_HOST", "10.0.0.180"),
         int(os.getenv("SERVER_PORT", 8001)),
         logger=None
     ):
@@ -20,10 +20,15 @@ async def main():
 
 
 if __name__ == "__main__":
-    if os.path.exists("../../.env"):
-        load_dotenv("../../.env")
-        
     logging.basicConfig(level=logging.INFO, format="[%(levelname)s]\t %(message)s")
+    
+    if os.path.exists('../.env'):
+        logging.info("Setup environment variables...")
+        os.unsetenv("SERVER_HOST")
+        os.unsetenv("SERVER_PORT")
+        
+        load_dotenv()
+        
 
     try:
         asyncio.run(main())

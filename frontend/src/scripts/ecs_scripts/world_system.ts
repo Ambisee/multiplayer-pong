@@ -7,15 +7,17 @@ import MultiplayerSystem, { HandlerCallback } from "./multiplayer_system"
 
 import { registry } from "./ecs_registry"
 import { BoundingBox, clamp, RED, WHITE } from "./common"
-import { AI_TYPE, ALIGNMENT, GAME_MODE, GAME_SCREEN, RENDER_LAYER } from "./components"
+import { AI_TYPE, ALIGNMENT, FIELD_EFFECTS, GAME_MODE, GAME_SCREEN, RENDER_LAYER } from "./components"
+import { BALL_VEL_INCREASE_RATE, INITIAL_BALL_VEL_MAG, MAX_PADDLE_VELOCITY, PADDLE_ACCELERATION, POWER_PADDLE_BALL_VEL_MAG } from "../config"
 import { BaseScreen } from "../screens/base_screen"
 import { Entity } from "./ecs"
-import { setTextContent, setTextAlignment } from "../helper_scripts/component_helpers"
-import { createBall, createDelayedCallback, createRectangle, createScreenBoundary, createText } from "./world_init"
+import { setTextContent, setTextAlignment, isWorldSlippery, isPowerPaddle, isPaddle } from "../helper_scripts/component_helpers"
+import { createBall, createDelayedCallback, createGameState, createRectangle, createScreenBoundary, createText } from "./world_init"
 import CollisionMessage from "../messages/collision_message"
 import { SERVER_EVENT } from "../messages/message_enum"
 import { arrayToShort } from "../helper_scripts/messaging_helpers"
 import MotionMessage from "../messages/motion_message"
+import { clampVec2, setVec2Magnitude } from "../helper_scripts/math_helper"
 
 class WorldSystem {
     private renderer: RenderSystem
@@ -34,7 +36,6 @@ class WorldSystem {
     private isPlayer1: boolean
     
     public currentScreen: GAME_SCREEN = GAME_SCREEN.MAIN_MENU
-    public isPaused: boolean = false
     public playerScore: number = 0
     public opponentScore: number = 0
 
@@ -63,12 +64,24 @@ class WorldSystem {
 
         }
         
+        if (registry.motions.has(this.player)) {
+            const pPos = registry.motions.get(this.player).position
+            if (pPos[1] < 0 || pPos[1] > this.renderer.gl.canvas.height) {
+                console.log(pPos)
+            }
+        }
+
+        if (registry.gameStates.length() > 0) {
+            const gameState = registry.gameStates.components[0]
+            if (gameState.isPaused) {
+                return
+            }
+        }
+
         // Decrement the time on the delayed callbacks and call them if time runs out
         for (let i = 0; i < registry.delayedCallbacks.length(); i++) {
             const delayedCallback = registry.delayedCallbacks.components[i]
-            if (!this.isPaused) {
-                delayedCallback.timeMs -= elapsedTimeMs
-            }
+            delayedCallback.timeMs -= elapsedTimeMs
             
             if (delayedCallback.timeMs <= 0) {
                 delayedCallback.callback()
@@ -115,7 +128,8 @@ class WorldSystem {
     }
 
     private restartGame() {
-        this.isPaused = false
+        // Create the game state component
+        createGameState(this.gameMode === GAME_MODE.MULTIPLAYER)
 
         // Create the screen boundaries
         createScreenBoundary(this.renderer)
@@ -133,6 +147,7 @@ class WorldSystem {
             registry.nonCollidables.emplace(line)
         }
         
+
         // Create the player
         this.player = createRectangle(
             vec2.fromValues(75, this.renderer.gl.canvas.height / 2),
@@ -141,6 +156,7 @@ class WorldSystem {
         )
         registry.players.emplace(this.player)
         registry.walls.emplace(this.player)
+        registry.motions.get(this.player).maxVelMag = MAX_PADDLE_VELOCITY
 
         // Create the opponent
         this.opponent = createRectangle(
@@ -149,7 +165,10 @@ class WorldSystem {
             vec4.fromValues(1, 1, 1, 1)
         )
         
+        registry.opponents.emplace(this.opponent)
         registry.walls.emplace(this.opponent)
+        registry.motions.get(this.opponent).maxVelMag = MAX_PADDLE_VELOCITY
+        
         if (this.gameMode === GAME_MODE.SINGLEPLAYER) {
             registry.ais.emplace(this.opponent).type = AI_TYPE.OPPONENT
         }
@@ -186,7 +205,7 @@ class WorldSystem {
         }
     }
 
-    public bindMultiplayerSystem() {
+    private bindMultiplayerSystem() {
         // Connected
         this.multiplayerSystem.setHandler(SERVER_EVENT.CONNECTED, (message) => {
             if (message[1] === 0) {
@@ -244,9 +263,9 @@ class WorldSystem {
             }
 
             // Get the ball position and velocities
-            const ballPos= vec2.fromValues(
+            const ballPos = vec2.fromValues(
                 arrayToShort(message, 1), arrayToShort(message, 3))
-            const ballVel= vec2.fromValues(
+            const ballVel = vec2.fromValues(
                 arrayToShort(message, 5), arrayToShort(message, 7))
 
             if (!this.isPlayer1) {
@@ -254,8 +273,14 @@ class WorldSystem {
                 ballVel[0] *= -1
             }
             
-            this.ball = createBall(ballPos, vec2.fromValues(50, 50), vec4.fromValues(1, 1, 1, 1))
-            registry.motions.get(this.ball).positionalVel = ballVel
+            this.ball = createBall(
+                ballPos, 
+                vec2.fromValues(50, 50), 
+                vec4.fromValues(1, 1, 1, 1))
+            const ballMotion = registry.motions.get(this.ball)
+            ballMotion.positionalVel = ballVel
+            ballMotion.maxVelMag = vec2.length(vec2.fromValues(INITIAL_BALL_VEL_MAG, INITIAL_BALL_VEL_MAG))
+
 
             // Display a "start" at the center for 1 second
             setTextContent(this.renderer, this.countdownTextEntity, "Start")
@@ -341,11 +366,11 @@ class WorldSystem {
         })
     }
 
-    public setMultiplayerHandler(serverEvent: SERVER_EVENT, handlerCallback: HandlerCallback) {
+    private setMultiplayerHandler(serverEvent: SERVER_EVENT, handlerCallback: HandlerCallback) {
         this.multiplayerSystem.setHandler(serverEvent, handlerCallback)
     }
 
-    public pushMultiplayerMessages(timeElapsed: number) {
+    private pushMultiplayerMessages(timeElapsed: number) {
         if (!this.isMultiplayer()) return
         if (!this.multiplayerSystem.isInitialized) return
         if (this.currentScreen !== GAME_SCREEN.GAME_SCREEN) return
@@ -356,7 +381,7 @@ class WorldSystem {
         this.multiplayerSystem.sendMessage(new MotionMessage(pMotion.position))
     }
 
-    public closeMultiplayer() {
+    private closeMultiplayer() {
         if (this.multiplayerSystem.isInitialized) {
             this.multiplayerSystem.close()
         }
@@ -398,8 +423,8 @@ class WorldSystem {
 
             const ballX = ballXMin + (Math.random() * (ballXMax - ballXMin))
             const ballY = ballYMin + (Math.random() * (ballYMax - ballYMin))
-            const ballVelX = 7.5 * (-1 + 2 * Math.round(Math.random()))
-            const ballVelY = 7.5 * (-1 + 2 * Math.round(Math.random()))
+            const ballVelX = (-1 + 2 * Math.round(Math.random()))
+            const ballVelY = (-1 + 2 * Math.round(Math.random()))
 
             this.ball = createBall(
                 vec2.fromValues(ballX, ballY),
@@ -408,9 +433,15 @@ class WorldSystem {
             )
             
             const ballMotion = registry.motions.get(this.ball)
-            ballMotion.positionalVel = vec2.fromValues(ballVelX, ballVelY)
+            
+            const normalVelVector = vec2.fromValues(ballVelX, ballVelY)
+            vec2.normalize(normalVelVector, normalVelVector)
+            vec2.scale(ballMotion.positionalVel, normalVelVector, INITIAL_BALL_VEL_MAG)
+            ballMotion.maxVelMag = 2.5 * INITIAL_BALL_VEL_MAG
 
             setTextContent(this.renderer, this.countdownTextEntity, "Start")
+
+            registry.gameStates.components[0].isGamePlaying = true
 
             createDelayedCallback(() => {
                 registry.removeAllComponentsOf(this.countdownTextEntity)
@@ -419,11 +450,12 @@ class WorldSystem {
     }
 
     public handleCollision(elapsedTimeMs: number) {
+        const gameState = registry.gameStates.components[0]
+
         // Handle in-game collisions
         for (const collision of registry.collisions.components) {
             // Ball collides with other objects
             if (collision.entity === this.ball) {
-
                 // Ball collides with the horizontal screen borders
                 if (registry.endGameWalls.has(collision.entityOther)) {
                     const endGameWall = registry.endGameWalls.get(collision.entityOther)
@@ -457,8 +489,8 @@ class WorldSystem {
                     } else {
                         this.playerScore += 1
                     }
-
-
+                    
+                    registry.gameStates.components[0].isGamePlaying = false
                     this.reinitializeWorld()
                     break
                 }
@@ -484,8 +516,25 @@ class WorldSystem {
 
                         this.multiplayerSystem.sendMessage(message)
                     }
+                    
+                    if (isPowerPaddle(this.player) || isPowerPaddle(this.opponent)) {
+                        if (isPaddle(collision.entityOther)) {
+                            if (isPowerPaddle(collision.entityOther)) {
+                                vec2.copy(ballMotion.positionalVel, setVec2Magnitude(ballMotion.positionalVel, POWER_PADDLE_BALL_VEL_MAG))
+                            } else {
+                                vec2.copy(ballMotion.positionalVel, setVec2Magnitude(ballMotion.positionalVel, gameState.currentBallVelMag * INITIAL_BALL_VEL_MAG))
+                            }
+                        }
+                    } else if (isPaddle(collision.entityOther)) {
+                        gameState.currentBallVelMag = gameState.currentBallVelMag * (1 + BALL_VEL_INCREASE_RATE)
+                        vec2.copy(
+                            ballMotion.positionalVel,
+                            setVec2Magnitude(ballMotion.positionalVel, gameState.currentBallVelMag * INITIAL_BALL_VEL_MAG)
+                        )
+                    }
 
                     PhysicSystem.reflectObject(ballMotion, otherMotion)
+                    continue
                 }
             }
 
@@ -497,9 +546,9 @@ class WorldSystem {
 
                     const wBB = BoundingBox.getBoundingBox(wMotion.position, wMotion.scale)
 
-                    if (pMotion.positionalVel[1] > 0) {
+                    if (pMotion.position[1] <= wMotion.position[1]) {
                         pMotion.position[1] = wBB.top - pMotion.scale[1] / 2
-                    } else if (pMotion.positionalVel[1] < 0) {
+                    } else if (pMotion.position[1] >= wMotion.position[1]) {
                         pMotion.position[1] = wBB.bottom + pMotion.scale[1] / 2
                     }
                 }
@@ -511,25 +560,52 @@ class WorldSystem {
     }
 
     private isMultiplayer() {
-        return this.gameMode === GAME_MODE.MULTIPLAYER
+        if (registry.gameStates.length() < 1) {
+            return false
+        }
+
+        return registry.gameStates.components[0].isMultiplayer
     }
 
     private onKeyUp(e: KeyboardEvent) {
-        if (this.isPaused) return
+        if (registry.gameStates.length() < 1) {
+            return
+        }
+
+        const gameState = registry.gameStates.components[0]
+        if (gameState.isPaused) {
+            return
+        }
+        
+        
         if (!registry.motions.has(this.player)) return
 
         const opMotion = registry.motions.get(this.opponent)
         const pMotion = registry.motions.get(this.player)
         if (e.key === "w" || e.key === "s" && pMotion.positionalVel[1] != 0) {
-            pMotion.positionalVel[1] = 0
+            if (isWorldSlippery()) {
+                pMotion.positionalAccel[1] = 0
+            } else {
+                pMotion.positionalVel[1] = 0
+            }
         }
 
         if (e.key === "ArrowUp" || e.key === "ArrowDown" && opMotion.positionalVel[1] != 0 && this.gameMode === GAME_MODE.TWOPLAYER) {
-            opMotion.positionalVel[1] = 0
+            if (isWorldSlippery()) {
+                opMotion.positionalAccel[1] = 0
+            } else {
+                opMotion.positionalVel[1] = 0
+            }
         }
     }
 
     private onKeyDown(e: KeyboardEvent) {
+        if (registry.gameStates.length() < 1) {
+            return
+        }
+
+        const gameState = registry.gameStates.components[0]
+
         if (this.currentScreen !== GAME_SCREEN.GAME_SCREEN) {
             this.screenSystem.handleKeyDown(e)
             return
@@ -542,22 +618,46 @@ class WorldSystem {
             case "Escape":
                 e.preventDefault()
 
-                this.isPaused = !this.isPaused
+                gameState.isPaused = !gameState.isPaused
                 registry.screenStates.components[0].darkenScreenFactor = 0.9
                 this.currentScreen = GAME_SCREEN.PAUSE_MENU
                 this.reinitializeWorld()
                 break
             case "w":
-                if (!this.isPaused) {pMotion.positionalVel[1] = -5}
+                if (!gameState.isPaused) {
+                    if (isWorldSlippery()) {
+                        pMotion.positionalAccel[1] = -PADDLE_ACCELERATION
+                    } else {
+                        pMotion.positionalVel[1] = -MAX_PADDLE_VELOCITY
+                    }
+                }
                 break
             case "s":
-                if (!this.isPaused) {pMotion.positionalVel[1] = 5}
+                if (!gameState.isPaused) {
+                    if (isWorldSlippery()) {
+                        pMotion.positionalAccel[1] = PADDLE_ACCELERATION
+                    } else {
+                        pMotion.positionalVel[1] = MAX_PADDLE_VELOCITY
+                    }
+                }
                 break
             case "ArrowUp":
-                if (!this.isPaused && this.gameMode === GAME_MODE.TWOPLAYER) {opMotion.positionalVel[1] = -5}
+                if (!gameState.isPaused && this.gameMode === GAME_MODE.TWOPLAYER) {
+                    if (isWorldSlippery()) {
+                        opMotion.positionalAccel[1] = -PADDLE_ACCELERATION
+                    } else {
+                        opMotion.positionalVel[1] = -MAX_PADDLE_VELOCITY
+                    }
+                }
                 break
             case "ArrowDown":
-                if (!this.isPaused && this.gameMode === GAME_MODE.TWOPLAYER) {opMotion.positionalVel[1] = 5}
+                if (!gameState.isPaused && this.gameMode === GAME_MODE.TWOPLAYER) {
+                    if (isWorldSlippery()) {
+                        opMotion.positionalAccel[1] = PADDLE_ACCELERATION
+                    } else {
+                        opMotion.positionalVel[1] = MAX_PADDLE_VELOCITY
+                    }
+                }
                 break
             default:
                 break

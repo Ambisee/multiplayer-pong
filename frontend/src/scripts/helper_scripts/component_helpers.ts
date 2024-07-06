@@ -1,5 +1,5 @@
 import { vec2 } from "gl-matrix"
-import { ALIGNMENT, Text } from "../ecs_scripts/components"
+import { ALIGNMENT, FIELD_EFFECTS, Text } from "../ecs_scripts/components"
 import { registry } from "../ecs_scripts/ecs_registry"
 import RenderSystem from "../ecs_scripts/render_system"
 
@@ -51,4 +51,28 @@ function setTextAlignment(entity: number, x_position: number, alignment: ALIGNME
     }
 }
 
-export { setTextContent, setTextAlignment }
+function isWorldSlippery() {
+    return registry.fieldEffects.length() > 0 && registry.fieldEffects.components[0].type === FIELD_EFFECTS.LOW_FRICTION
+}
+
+function isPaddle(entity: number) {
+    return registry.players.has(entity) || registry.opponents.has(entity)
+}
+
+function isPowerPaddle(entity: number) {
+    if (!registry.fieldEffects.has(entity)) {
+        return false
+    }
+
+    return registry.fieldEffects.get(entity).type === FIELD_EFFECTS.POWER_PADDLE
+}
+
+function isSpinShots(entity: number) {
+    if (!registry.fieldEffects.has(entity)) {
+        return false
+    }
+
+    return registry.fieldEffects.get(entity).type === FIELD_EFFECTS.SPIN_SHOTS
+}
+
+export { setTextContent, setTextAlignment, isWorldSlippery, isPaddle, isPowerPaddle, isSpinShots }

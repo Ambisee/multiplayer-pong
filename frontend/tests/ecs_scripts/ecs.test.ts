@@ -1,5 +1,5 @@
-import { ComponentContainer } from "../src/scripts/ecs_scripts/ecs"
-import { EFFECTS, GEOMETRY, Motion, Player, RENDER_LAYER, RenderRequest } from "../src/scripts/ecs_scripts/components"
+import { ComponentContainer } from "../../src/scripts/ecs_scripts/ecs"
+import { EFFECTS, GEOMETRY, Motion, Player, RENDER_LAYER, RenderRequest } from "../../src/scripts/ecs_scripts/components"
 import { vec2 } from "gl-matrix"
 
 describe("ECS tests", () => {
@@ -83,7 +83,9 @@ describe("ECS tests", () => {
             expect(motions.toString()).toEqual("ComponentContainer<Motion>")
         })
 
-        it.each([0, 1, 5])("should have a working `sort` method", (numComponents) => {
+        it.each([
+            0, 1, 5
+        ])("should have a working `sort` method (1)", (numComponents) => {
             const renderRequests = new ComponentContainer(RenderRequest)
 
             for (let i = 0; i < numComponents; i++) {
@@ -104,6 +106,29 @@ describe("ECS tests", () => {
             // Check if the components are really sorted
             for (let i = 1; i < numComponents; i++) {
                 const inOrder = renderRequests.components[i - 1].renderLayer <= renderRequests.components[i].renderLayer
+                expect(inOrder).toBe(true)
+            }
+        })
+
+        it.each(
+            [0, 1, 5, 10]
+        )("should have a working `sort` method (2)", (numComponents) => {
+            const motions = new ComponentContainer(Motion)
+
+            for (let i = 0; i < numComponents; i++) {
+                const x = Math.random() * 1000 % 1000
+                const y = Math.random() * 1000 % 1000
+                motions.insert(i, new Motion(undefined, undefined, vec2.fromValues(x, y)))
+            }
+
+            motions.sort((a, b) => {
+                const m1 = motions.get(a)
+                const m2 = motions.get(b)
+                return m1.position[0] - m2.position[0]
+            })
+
+            for (let i = 1; i < motions.length(); i++) {
+                const inOrder = motions.components[i - 1].position[0] <= motions.components[i].position[0]
                 expect(inOrder).toBe(true)
             }
         })

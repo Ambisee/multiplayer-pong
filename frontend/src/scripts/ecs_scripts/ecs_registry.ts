@@ -1,8 +1,9 @@
 import { 
     NonCollidable, Collision, Motion, Player, RenderRequest, 
     Wall, Ball, Opponent, Text, Button, ScreenState, EndGameWall,
-    DelayedCallback,
-    AI
+    DelayedCallback, AI, FieldEffect, GameState,
+    BaseAnimation,
+    NumberAnimation,
 } from "./components"
 import { ComponentContainer } from "./ecs"
 
@@ -18,8 +19,11 @@ class ECSRegistry {
     public texts: ComponentContainer<Text> = new ComponentContainer(Text)
     public buttons: ComponentContainer<Button> = new ComponentContainer(Button)
     public screenStates: ComponentContainer<ScreenState> = new ComponentContainer(ScreenState)
+    public gameStates: ComponentContainer<GameState> = new ComponentContainer(GameState)
     public endGameWalls: ComponentContainer<EndGameWall> = new ComponentContainer(EndGameWall)
     public delayedCallbacks: ComponentContainer<DelayedCallback> = new ComponentContainer(DelayedCallback)
+    public fieldEffects: ComponentContainer<FieldEffect> = new ComponentContainer(FieldEffect)
+    public animations: ComponentContainer<BaseAnimation> = new ComponentContainer(BaseAnimation)
     public ais: ComponentContainer<AI> = new ComponentContainer(AI)
 
     private componentsList: ComponentContainer<any>[]
@@ -38,7 +42,10 @@ class ECSRegistry {
         this.componentsList.push(this.texts)
         this.componentsList.push(this.buttons)
         this.componentsList.push(this.screenStates)
+        this.componentsList.push(this.animations)
+        this.componentsList.push(this.gameStates)
         this.componentsList.push(this.endGameWalls)
+        this.componentsList.push(this.fieldEffects)
         this.componentsList.push(this.delayedCallbacks)
         this.componentsList.push(this.ais)
     }

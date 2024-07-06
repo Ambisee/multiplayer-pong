@@ -3,7 +3,10 @@ import { vec2 } from "gl-matrix"
 import { BoundingBox, clamp } from "./common"
 import { registry } from "./ecs_registry"
 import { Entity } from "./ecs"
-import { Collision, GEOMETRY, Motion } from "./components"
+import { Collision, FIELD_EFFECTS, GEOMETRY, Motion } from "./components"
+import { FRICTION_COEFFICIENT, INITIAL_BALL_VEL_MAG } from "../config"
+import { isWorldSlippery } from "../helper_scripts/component_helpers"
+import { clampVec2 } from "../helper_scripts/math_helper"
 
 class PhysicSystem {
     public constructor() {
@@ -11,7 +14,13 @@ class PhysicSystem {
     }
 
     public step(elapsedTimeMs: number) {
-        this.processMovement(elapsedTimeMs)
+        if (isWorldSlippery()) {
+            this.processRealMotion(elapsedTimeMs)
+        } else {
+            this.processMotion(elapsedTimeMs)
+        }
+
+
         this.checkCollision(elapsedTimeMs)
     }
 
@@ -33,6 +42,7 @@ class PhysicSystem {
             incomingAngle >= topLeftAngle && incomingAngle <= topRightAngle
         ) {
             reflectedMotion.positionalVel[1] *= -1
+            reflectedMotion.positionalAccel[1] *= -1
             
             if (direction[1] >= 0) {
                 reflectedMotion.position[1] = bb.top - reflectedMotion.scale[1] / 2
@@ -41,6 +51,7 @@ class PhysicSystem {
             }
         } else {
             reflectedMotion.positionalVel[0] *= -1
+            reflectedMotion.positionalAccel[0] *= -1
 
             if (direction[0] >= 0) {
                 reflectedMotion.position[0] = bb.left - reflectedMotion.scale[0] / 2
@@ -50,12 +61,47 @@ class PhysicSystem {
         }
     }
 
-    private processMovement(elapsedTimeMs: number) {
+    private processRealMotion(elapsedTimeMs: number) {
+        for (const motion of registry.motions.components) {
+            motion.rotation += motion.rotationalVel * elapsedTimeMs / 1000
+
+            // Apply acceleration or decceleration
+            if (vec2.dot(motion.positionalAccel, motion.positionalAccel) > 0) {
+                const accelVector = vec2.scale(vec2.create(), motion.positionalAccel, elapsedTimeMs / 1000)
+                vec2.add(motion.positionalVel, motion.positionalVel, accelVector)
+                
+                const velMagnitude = vec2.length(motion.positionalVel)
+                const normalVelVector = vec2.normalize(vec2.create(), motion.positionalVel)
+
+                vec2.scale(motion.positionalVel, normalVelVector, Math.min(velMagnitude, motion.maxVelMag))
+            } else {
+                vec2.scale(motion.positionalVel, motion.positionalVel, FRICTION_COEFFICIENT)
+            }
+
+            // Set velocity to 0 if its magnitude is less than 1
+            if (vec2.dot(motion.positionalVel, motion.positionalVel) < 1) {
+                vec2.set(motion.positionalVel, 0, 0)
+            }
+
+            vec2.copy(motion.prevPosition, motion.position)
+
+            const velVector = vec2.scale(vec2.create(), motion.positionalVel, elapsedTimeMs / 1000)
+            vec2.rotate(velVector, velVector, vec2.fromValues(0, 0), motion.rotation)
+            vec2.add(motion.position, motion.position, velVector)
+        }
+    }
+
+    private processMotion(elapsedTimeMs: number) {
         for (const motion of registry.motions.components) {
             // Rotate by the rotation velocity
-            motion.rotation += motion.rotationalVel * elapsedTimeMs
+            motion.rotation += motion.rotationalVel * elapsedTimeMs / 1000
 
-            vec2.add(motion.position, motion.position, motion.positionalVel)
+            vec2.copy(motion.prevPosition, motion.position)
+            
+            const velVector = vec2.scale(vec2.create(), motion.positionalVel, elapsedTimeMs / 1000)
+            clampVec2(velVector, motion.maxVelMag)
+            vec2.rotate(velVector, velVector, vec2.fromValues(0, 0), motion.rotation)
+            vec2.add(motion.position, motion.position, velVector)
         }
     }
 
@@ -72,11 +118,6 @@ class PhysicSystem {
                 if (registry.nonCollidables.has(e2)) continue
 
                 if (this.aabbDetection(e1, e2)) {
-                    // let m = registry.motions.get(e1)
-                    // let m1 = registry.motions.get(e2)
-                    // console.log(BoundingBox.getBoundingBox(m.position, m.scale))
-                    // console.log(BoundingBox.getBoundingBox(m1.position, m1.scale))
-
                     registry.collisions.insert(Entity.generate(), new Collision(e1, e2))
                     registry.collisions.insert(Entity.generate(), new Collision(e2, e1))
                 }

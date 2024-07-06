@@ -104,10 +104,21 @@ function createText(renderer: RenderSystem, position: vec2, content: string, col
 
     renderRequest.effect = EFFECTS.TEXT
     renderRequest.geometry = GEOMETRY.TEXT
-    renderRequest.renderLayer = RENDER_LAYER.L2
+    renderRequest.renderLayer = RENDER_LAYER.L4
     renderRequest.color = vec4.clone(color)
 
     return entity
+}
+
+function createGameState(isMultiplayer: boolean = false) {
+    const entity = Entity.generate()
+
+    const gameState = registry.gameStates.emplace(entity)
+    gameState.isGamePlaying = false
+    gameState.isPaused = false
+    gameState.isMultiplayer = isMultiplayer
+
+    return gameState
 }
 
 function createDelayedCallback(callback: Function, timeMs: number) {
@@ -122,5 +133,5 @@ function createDelayedCallback(callback: Function, timeMs: number) {
 
 export {
     createRectangle, createEllipse, createWall, createScreenBoundary, createBall,
-    createText, createDelayedCallback
+    createText, createDelayedCallback, createGameState
 }

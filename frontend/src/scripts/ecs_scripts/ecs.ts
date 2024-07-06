@@ -100,9 +100,17 @@ class ComponentContainer<T extends Component> {
         this.isSorted = false
     }
 
+    /**
+     * 
+     * @param comparator
+     *      function that takes two entity ids and returns a number.
+     * @param alwaysSort 
+     *      flag to skip sorting when there are no components added or removed prior to the sort
+     * @returns 
+     */
     public sort(comparator: Comparator, alwaysSort: boolean = false): void {
         // If `alwaysSort` is set to `true`, the sorting algorithm will always be called.
-        // The flag can be useful if we want to sort the components by different comparator function.
+        // The flag can be useful if we want to sort the components with different comparator functions.
         if (this.isSorted && !alwaysSort) {
             return
         }

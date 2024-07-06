@@ -15,7 +15,7 @@ class Room:
     p2: Player | None
     room_id: str
     
-    win_threshold: int = 2
+    win_threshold: int = 5
 
     collision_payloads: list[bytes] = [None, None]
     collision_payload_received: list[bool] = [False, False]

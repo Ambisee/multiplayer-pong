@@ -139,7 +139,11 @@ class PostGameScreen extends BaseScreen {
                 onMouseDown: (e) => {
                     registry.screenStates.components[0].darkenScreenFactor = 0
                     world.currentScreen = GAME_SCREEN.MAIN_MENU
-                    world.isPaused = false
+                    
+                    if (registry.gameStates.length() > 0) {
+                        registry.gameStates.components[0].isPaused = false
+                    }
+
                     world.reinitializeWorld()
                     world.closeMultiplayer()
                     world.resetScore()

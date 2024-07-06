@@ -41,7 +41,7 @@ async def handle_connection(ws: websockets.WebSocketServerProtocol):
     handle_func = handlers.get(data[0])
     if handle_func is None:
         return
-
+    
     # Process the message
     handle_result = await handle_func(ws, data)
     

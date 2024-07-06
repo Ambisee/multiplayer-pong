@@ -4,6 +4,10 @@ import PhysicSystem from "./ecs_scripts/physics_system"
 import { staticManager } from "./helper_scripts/static_manager"
 import { GAME_WINDOW_WIDTH, GAME_WINDOW_HEIGHT } from "./config"
 import AISystem from "./ecs_scripts/ai_system"
+import FieldEffectSystem from "./ecs_scripts/field_effect_system"
+import { vec2 } from "gl-matrix"
+import AnimationSystem from "./ecs_scripts/animation_system"
+import { registry } from "./ecs_scripts/ecs_registry"
 
 const canvasElementID = "#webgl-context"
 const siteState = {isStarted: false}
@@ -39,18 +43,24 @@ function loop(
     world: WorldSystem,
     physics: PhysicSystem,
     ai: AISystem,
+    fieldEffects: FieldEffectSystem,
+    animations: AnimationSystem,
     previousTime: number
 ) {
     const timeElapsed = Date.now() - previousTime
 
     world.step(timeElapsed)
 
-    if (!world.isPaused) {
+
+    if (registry.gameStates.length() > 0 && !registry.gameStates.components[0].isPaused) {
         ai.step(timeElapsed)
         physics.step(timeElapsed)
+        fieldEffects.step(timeElapsed)
         world.handleCollision(timeElapsed)
         world.pushMultiplayerMessages(timeElapsed)
     }
+
+    animations.step(timeElapsed)
 
     const newPreviousTime = Date.now()
 
@@ -60,6 +70,8 @@ function loop(
         world,
         physics,
         ai,
+        fieldEffects,
+        animations,
         newPreviousTime
     ))
 }
@@ -76,8 +88,10 @@ async function initializeGame() {
     const world: WorldSystem = new WorldSystem(renderer)
     const physics: PhysicSystem = new PhysicSystem()
     const ai: AISystem = new AISystem()
+    const fieldEffects: FieldEffectSystem = new FieldEffectSystem(renderer)
+    const animations: AnimationSystem = new AnimationSystem()
 
-    loop(renderer, world, physics, ai, Date.now())
+    loop(renderer, world, physics, ai, fieldEffects, animations, Date.now())
 }
 
 function switchToGameWindow() {

@@ -1,3 +1,6 @@
+import random
+import logging
+
 from websockets import WebSocketServerProtocol
 
 from .end_round import end_round
@@ -27,6 +30,7 @@ async def collision(ws: WebSocketServerProtocol, message: bytes):
     if not all(room.collision_payload_received):
         return
     
+    #######################################
     # Calculate the result of the collision
     
     # Get the values from the payload
@@ -53,7 +57,18 @@ async def collision(ws: WebSocketServerProtocol, message: bytes):
             p2_payload.wall_scale,
         )
     else:
-        raise ValueError("Payload values doesn't match.")
+        logging.error("[UNHANDLED CASE] Payload values doesn't match.")
+        
+        # Temporary
+        payload = random.choice([p1_payload, p2_payload])
+        result = PhysicSystem.reflect_object(
+            payload.ball_pos,
+            payload.ball_vel,
+            payload.wall_pos,
+            payload.wall_scale
+        )
+
+        # raise ValueError("Payload values doesn't match.")
 
     # Refresh the collision payload statuses
     room.collision_payload_received = [False, False]
