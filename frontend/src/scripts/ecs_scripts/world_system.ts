@@ -370,7 +370,7 @@ class WorldSystem {
         this.multiplayerSystem.setHandler(serverEvent, handlerCallback)
     }
 
-    private pushMultiplayerMessages(timeElapsed: number) {
+    public pushMultiplayerMessages(timeElapsed: number) {
         if (!this.isMultiplayer()) return
         if (!this.multiplayerSystem.isInitialized) return
         if (this.currentScreen !== GAME_SCREEN.GAME_SCREEN) return
